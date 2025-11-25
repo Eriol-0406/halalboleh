@@ -1,0 +1,247 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    /* Clean white background */
+    @apply bg-white text-gray-900;
+  }
+}
+
+/* Animated gradient blobs */
+@keyframes blob1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(100px, 50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-50px, 100px) scale(0.9);
+  }
+}
+
+@keyframes blob2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-100px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(50px, -100px) scale(0.9);
+  }
+}
+
+@keyframes blob3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-50px, 50px) scale(1.1);
+  }
+  66% {
+    transform: translate(100px, -50px) scale(0.9);
+  }
+}
+
+/* Slow zoom animation for hero background */
+@keyframes slow-zoom {
+  0%, 100% { 
+    transform: scale(1); 
+  }
+  50% { 
+    transform: scale(1.05); 
+  }
+}
+
+.animate-slow-zoom {
+  animation: slow-zoom 20s ease-in-out infinite;
+}
+
+.blob1 {
+  animation: blob1 20s ease-in-out infinite;
+}
+
+.blob2 {
+  animation: blob2 25s ease-in-out infinite;
+}
+
+.blob3 {
+  animation: blob3 30s ease-in-out infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-emerald-400/50 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-emerald-400/70;
+}
+
+@layer components {
+  /* Glass card styles */
+  .glass-card {
+    /* Slightly warmer translucent surface for better legibility */
+    @apply bg-emerald-900/10 backdrop-blur-md border border-emerald-500/20 rounded-3xl p-6 transition-all duration-300;
+  }
+
+  .glass-card-hover {
+    @apply glass-card hover:bg-emerald-800/20 hover:border-emerald-400/30 hover:shadow-lg;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    /* Primary CTA: deep green gradient to match new light theme accents */
+    @apply bg-gradient-to-r from-emerald-700 to-emerald-500 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200;
+  }
+
+  .btn-secondary {
+    @apply bg-emerald-900/20 backdrop-blur-xl border border-emerald-500/30 text-white font-semibold px-8 py-4 rounded-2xl hover:bg-emerald-800/30 hover:border-emerald-400/50 active:scale-95 transition-all duration-300;
+  }
+
+  .btn-ghost {
+    @apply text-emerald-100 font-semibold px-4 py-2 rounded-full hover:bg-emerald-900/20 hover:text-white active:scale-95 transition-all duration-200;
+  }
+
+  /* Input styles */
+  .input-dark {
+    @apply w-full bg-emerald-900/20 backdrop-blur-xl border border-emerald-500/30 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder:text-emerald-200/40 transition-all duration-300;
+  }
+
+  .select-dark {
+    @apply w-full bg-emerald-900/20 backdrop-blur-xl border border-emerald-500/30 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none cursor-pointer transition-all duration-300;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2314B8A6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+    padding-right: 2.5rem;
+  }
+
+  .select-dark option {
+    @apply bg-[#13131A] text-white;
+  }
+
+  /* Badge styles */
+  .badge-success {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-emerald-400/10 border border-emerald-400/20 text-emerald-200 rounded-full font-semibold text-sm;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-amber-400/10 border border-amber-400/20 text-amber-200 rounded-full font-semibold text-sm;
+  }
+
+  .badge-error {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-red-500/15 border border-red-500/20 text-red-200 rounded-full font-semibold text-sm;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-emerald-400/10 border border-emerald-400/20 text-emerald-100 rounded-full font-semibold text-sm;
+  }
+
+  /* Text styles */
+  .gradient-text {
+    /* warm amber → deep green for headings */
+    @apply bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-600 bg-clip-text text-transparent;
+  }
+
+  /* Background styles */
+  .bg-surface {
+    @apply bg-[#13131A];
+  }
+
+  .bg-elevated {
+    @apply bg-[#1A1A24];
+  }
+
+  /* Card styles (for app pages that need white cards) */
+  .card {
+    @apply bg-white rounded-2xl p-5 shadow-md;
+  }
+
+  .btn-primary-legacy {
+    @apply w-full bg-gradient-to-r from-halal-primary to-halal-primary-dark text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all;
+  }
+
+  .btn-secondary-legacy {
+    @apply w-full bg-white text-halal-primary font-semibold py-4 px-6 rounded-xl border-2 border-halal-primary hover:bg-halal-primary-light/10 active:scale-95 transition-all;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-halal-primary focus:border-transparent transition-all;
+  }
+
+  /* Lower section shared background using the food photo motif (subtle, darkened) */
+  /* Lower sections: light / white theme background and panels
+     Keeps hero untouched. Use `.lower-section-bg-photo` to opt into photo if needed. */
+    /* warm beige / cream background like the reference */
+    .lower-section-bg {
+      background-color: #F6F4ED; /* warm cream */
+      background-image: linear-gradient(180deg, rgba(246,244,237,0.9), rgba(246,244,237,1));
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* Our Services dark yellow background (section behind service cards) */
+    .our-services-bg {
+      /* requested yellow: #eed348 */
+      background-color: #eed348;
+      background-image: linear-gradient(180deg, rgba(238,211,72,0.06), rgba(238,211,72,0.04));
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+  /* Fallback class to use the photographic motif if needed (blurred + dark overlay) */
+  .lower-section-bg-photo {
+    position: relative;
+    background-color: #eef2f3;
+    background-image: url('/food.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* White card panel for sections */
+  /* (consolidated later in file) */
+
+  /* Slightly larger container spacing for airy layout */
+    .section-container {
+      @apply max-w-7xl mx-auto px-8 py-28;
+    }
+
+  /* Badge styles adapted for light theme */
+  .badge-success {
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#F1EFEA] text-emerald-800 border border-[#ECEAE5] rounded-full font-semibold text-sm;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#FFF6EA] text-amber-800 border border-[#FFF1DD] rounded-full font-semibold text-sm;
+  }
+
+  .badge-error {
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 border border-red-100 rounded-full font-semibold text-sm;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#EEF9F4] text-emerald-800 border border-[#E7F3EC] rounded-full font-semibold text-sm;
+  }
+
+  /* Panel used inside sections to create elevated white cards */
+  .section-panel {
+    @apply bg-white text-gray-900 shadow-lg border border-gray-100 rounded-2xl p-8 transition-all;
+  }
+}
+
+
