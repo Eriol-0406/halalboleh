@@ -1,7 +1,8 @@
 # Halal-X: AI-Powered JAKIM Certification Assistant
 
 🕌 **Tagline:** Replace RM3,500/month Halal Executive with RM50/month AI Assistant
-
+ 
+**Last updated:** 26 November 2025
 Built for **EmbeddedLLM CodeFest** - Generative AI for Malaysian Industries with JamAI Base
 
 ---
