@@ -214,85 +214,6 @@ export default function IHCSArchitect() {
     )
   }
 
-  // Send single answer to JamAI for real-time validation
-  const sendToJamAI = async (
-    userAnswer: string,
-    chapterIndex: number,
-    companyNameParam: string,
-    businessType: string
-  ): Promise<{ html_content: string; status: string }> => {
-    // Map chapter index to Seksyen number
-    const chapterLabel = `Seksyen ${chapterIndex + 1}`
-
-    // Construct payload - single row for JamAI
-    const payload = [
-      {
-        company_name: companyNameParam,
-        business_type: businessType,
-        user_answer: userAnswer,
-        chapter_number: chapterLabel,
-        language: 'Bahasa Malaysia'
-      }
-    ]
-
-    try {
-      console.log('🚀 Sending to Backend:', payload) // Debug Log 1
-
-      const response = await fetch('/api/generate-ihcs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: payload })
-      })
-
-      if (!response.ok) {
-        throw new Error(`Network Error: ${response.statusText}`)
-      }
-
-      const result = await response.json()
-      console.log('📩 Raw JamAI Response:', result) // Debug Log 2: CHECK THIS IN CONSOLE
-
-      // --- ROBUST DATA EXTRACTION START ---
-      // We try multiple paths to find the data, just in case
-      let generatedHTML = ''
-
-      // Path 1: Standard JamAI Action Table response
-      if (result.rows && result.rows[0]?.columns?.formal_content?.text) {
-        generatedHTML = result.rows[0].columns.formal_content.text
-      } 
-      // Path 2: Alternative structure (from our API wrapper)
-      else if (result.results && result.results[0]?.formal_content) {
-        generatedHTML = result.results[0].formal_content
-      }
-      // Path 3: Direct column access (simplified response)
-      else if (result.html_content) {
-        generatedHTML = result.html_content
-      }
-      // Path 4: Direct formal_content property
-      else if (result.formal_content) {
-        generatedHTML = result.formal_content
-      }
-      
-      if (!generatedHTML) {
-        console.error('❌ Could not find "formal_content" in response. Check Column Names!')
-        console.error('Response structure:', JSON.stringify(result, null, 2))
-        throw new Error('Data missing from response')
-      }
-      // --- ROBUST DATA EXTRACTION END ---
-
-      return {
-        html_content: generatedHTML,
-        status: 'success'
-      }
-    } catch (error) {
-      console.error('🔥 CRITICAL ERROR:', error)
-      return {
-        // We return the error as text so you can see it in the chat bubble
-        html_content: `<div class='alert alert-danger'>System Error: ${(error as Error).message}</div>`,
-        status: 'error'
-      }
-    }
-  }
-
   const handleSend = async () => {
     if (!input.trim() || isAnalyzing) return
 
@@ -305,13 +226,12 @@ export default function IHCSArchitect() {
     setAnswers(prev => ({ ...prev, [chapter.field]: userInput }))
 
     // Extract company name from first answer if this is chapter 0
-    let currentCompanyName = companyName
     if (currentChapter === 0 && !companyName) {
-      currentCompanyName = userInput.split(/,|jenis/i)[0]?.trim() || 'Syarikat'
-      setCompanyName(currentCompanyName)
+      const extractedName = userInput.split(/,|jenis/i)[0]?.trim() || 'Syarikat'
+      setCompanyName(extractedName)
     }
 
-    // REAL-TIME VALIDATION: Send to JamAI immediately (The Gatekeeper)
+    // REAL-TIME VALIDATION: Send to JamAI immediately
     setIsAnalyzing(true)
     addAIMessage(language === 'bm' 
       ? '🔍 Menganalisis jawapan anda mengikut piawaian MPPHM 2020...'
@@ -319,56 +239,71 @@ export default function IHCSArchitect() {
     )
 
     try {
-      // Call JamAI with single answer
-      const response = await sendToJamAI(
-        userInput,
-        currentChapter,
-        currentCompanyName || 'Syarikat',
-        'Perkhidmatan Makanan'
-      )
+      // Map chapter to Seksyen number
+      const chapterMap: Record<number, string> = {
+        0: 'Seksyen 1',
+        1: 'Seksyen 2',
+        2: 'Seksyen 3',
+        3: 'Seksyen 4',
+        4: 'Seksyen 5',
+        5: 'Seksyen 6',
+        6: 'Seksyen 7',
+        7: 'Seksyen 8'
+      }
+
+      // Call API to validate this single answer
+      const response = await fetch('/api/generate-ihcs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: companyName || 'Syarikat',
+          businessType: 'Perkhidmatan Makanan',
+          singleAnswer: {
+            field: chapter.field,
+            value: userInput,
+            chapterNumber: chapterMap[currentChapter]
+          }
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Validation failed')
+      }
+
+      const result = await response.json()
+      const htmlContent = result.generatedHTML || ''
 
       setIsAnalyzing(false)
 
-      // CHECK FOR FAILURE (The Gatekeeper Check)
-      const isFailure = isChapterNonCompliant(response.html_content)
-
-      if (isFailure) {
-        // 🔴 RED LIGHT: VALIDATION FAILED
-        // Show the Error HTML (Red Box) directly in the chat
+      // CHECK FOR FAILURE
+      if (isChapterNonCompliant(htmlContent)) {
+        // 🔴 FAIL CASE: Show error, stay on same question
         addAIMessage(`❌ ${language === 'bm' 
           ? 'Jawapan anda tidak memenuhi piawaian MPPHM 2020. Sila cuba jawab semula.'
           : 'Your answer does not meet MPPHM 2020 standards. Please try again.'
         }`)
         
-        // Show the detailed error/correction instructions from JamAI
-        addAIMessage(response.html_content)
+        // Show the detailed error from JamAI
+        addAIMessage(htmlContent)
         
-        // CRITICAL: DO NOT increment currentChapter - user must try again
+        // DO NOT increment currentChapter - user must try again
         return
       }
 
-      // 🟢 GREEN LIGHT: VALIDATION PASSED
-      // 1. Save the validated HTML to our final document array
-      setFinalChapters(prev => {
-        const updated = [...prev]
-        updated[currentChapter] = response.html_content
-        return updated
-      })
+      // 🟢 PASS CASE: Save HTML and move to next question
+      setFinalChapters(prev => [...prev, htmlContent])
       
-      // 2. Show success indicator
       addAIMessage(language === 'bm' 
-        ? '✅ Jawapan diterima! Analisis halal lulus. (Compliance Check: PASS)'
-        : '✅ Answer accepted! Halal analysis passed. (Compliance Check: PASS)'
+        ? '✅ Jawapan diterima! Analisis halal lulus. Terima kasih!'
+        : '✅ Answer accepted! Halal analysis passed. Thank you!'
       )
       
-      // 3. Move to Next Question
       setTimeout(() => {
         if (currentChapter < CHAPTERS.length - 1) {
           const nextChapter = currentChapter + 1
           setCurrentChapter(nextChapter)
           addAIMessage(language === 'bm' ? CHAPTERS[nextChapter].question : CHAPTERS[nextChapter].questionEn)
         } else {
-          // All questions done!
           addAIMessage(language === 'bm'
             ? '🎉 Tahniah! Semua jawapan anda telah lulus validasi MPPHM 2020! Manual anda sudah siap untuk dimuat turun.'
             : '🎉 Congratulations! All your answers have passed MPPHM 2020 validation! Your manual is ready to download.'
@@ -380,8 +315,8 @@ export default function IHCSArchitect() {
     } catch (error) {
       setIsAnalyzing(false)
       addAIMessage(language === 'bm'
-        ? `⚠️ Ralat sambungan. Sila cuba lagi.`
-        : `⚠️ Connection error. Please try again.`
+        ? `❌ Ralat: ${(error as Error).message}. Sila cuba lagi.`
+        : `❌ Error: ${(error as Error).message}. Please try again.`
       )
       console.error('Validation error:', error)
     }

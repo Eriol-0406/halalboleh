@@ -214,85 +214,6 @@ export default function IHCSArchitect() {
     )
   }
 
-  // Send single answer to JamAI for real-time validation
-  const sendToJamAI = async (
-    userAnswer: string,
-    chapterIndex: number,
-    companyNameParam: string,
-    businessType: string
-  ): Promise<{ html_content: string; status: string }> => {
-    // Map chapter index to Seksyen number
-    const chapterLabel = `Seksyen ${chapterIndex + 1}`
-
-    // Construct payload - single row for JamAI
-    const payload = [
-      {
-        company_name: companyNameParam,
-        business_type: businessType,
-        user_answer: userAnswer,
-        chapter_number: chapterLabel,
-        language: 'Bahasa Malaysia'
-      }
-    ]
-
-    try {
-      console.log('🚀 Sending to Backend:', payload) // Debug Log 1
-
-      const response = await fetch('/api/generate-ihcs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: payload })
-      })
-
-      if (!response.ok) {
-        throw new Error(`Network Error: ${response.statusText}`)
-      }
-
-      const result = await response.json()
-      console.log('📩 Raw JamAI Response:', result) // Debug Log 2: CHECK THIS IN CONSOLE
-
-      // --- ROBUST DATA EXTRACTION START ---
-      // We try multiple paths to find the data, just in case
-      let generatedHTML = ''
-
-      // Path 1: Standard JamAI Action Table response
-      if (result.rows && result.rows[0]?.columns?.formal_content?.text) {
-        generatedHTML = result.rows[0].columns.formal_content.text
-      } 
-      // Path 2: Alternative structure (from our API wrapper)
-      else if (result.results && result.results[0]?.formal_content) {
-        generatedHTML = result.results[0].formal_content
-      }
-      // Path 3: Direct column access (simplified response)
-      else if (result.html_content) {
-        generatedHTML = result.html_content
-      }
-      // Path 4: Direct formal_content property
-      else if (result.formal_content) {
-        generatedHTML = result.formal_content
-      }
-      
-      if (!generatedHTML) {
-        console.error('❌ Could not find "formal_content" in response. Check Column Names!')
-        console.error('Response structure:', JSON.stringify(result, null, 2))
-        throw new Error('Data missing from response')
-      }
-      // --- ROBUST DATA EXTRACTION END ---
-
-      return {
-        html_content: generatedHTML,
-        status: 'success'
-      }
-    } catch (error) {
-      console.error('🔥 CRITICAL ERROR:', error)
-      return {
-        // We return the error as text so you can see it in the chat bubble
-        html_content: `<div class='alert alert-danger'>System Error: ${(error as Error).message}</div>`,
-        status: 'error'
-      }
-    }
-  }
-
   const handleSend = async () => {
     if (!input.trim() || isAnalyzing) return
 
@@ -305,13 +226,12 @@ export default function IHCSArchitect() {
     setAnswers(prev => ({ ...prev, [chapter.field]: userInput }))
 
     // Extract company name from first answer if this is chapter 0
-    let currentCompanyName = companyName
     if (currentChapter === 0 && !companyName) {
-      currentCompanyName = userInput.split(/,|jenis/i)[0]?.trim() || 'Syarikat'
-      setCompanyName(currentCompanyName)
+      const extractedName = userInput.split(/,|jenis/i)[0]?.trim() || 'Syarikat'
+      setCompanyName(extractedName)
     }
 
-    // REAL-TIME VALIDATION: Send to JamAI immediately (The Gatekeeper)
+    // REAL-TIME VALIDATION: Send to JamAI immediately
     setIsAnalyzing(true)
     addAIMessage(language === 'bm' 
       ? '🔍 Menganalisis jawapan anda mengikut piawaian MPPHM 2020...'
@@ -319,56 +239,71 @@ export default function IHCSArchitect() {
     )
 
     try {
-      // Call JamAI with single answer
-      const response = await sendToJamAI(
-        userInput,
-        currentChapter,
-        currentCompanyName || 'Syarikat',
-        'Perkhidmatan Makanan'
-      )
+      // Map chapter to Seksyen number
+      const chapterMap: Record<number, string> = {
+        0: 'Seksyen 1',
+        1: 'Seksyen 2',
+        2: 'Seksyen 3',
+        3: 'Seksyen 4',
+        4: 'Seksyen 5',
+        5: 'Seksyen 6',
+        6: 'Seksyen 7',
+        7: 'Seksyen 8'
+      }
+
+      // Call API to validate this single answer
+      const response = await fetch('/api/generate-ihcs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: companyName || 'Syarikat',
+          businessType: 'Perkhidmatan Makanan',
+          singleAnswer: {
+            field: chapter.field,
+            value: userInput,
+            chapterNumber: chapterMap[currentChapter]
+          }
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Validation failed')
+      }
+
+      const result = await response.json()
+      const htmlContent = result.generatedHTML || ''
 
       setIsAnalyzing(false)
 
-      // CHECK FOR FAILURE (The Gatekeeper Check)
-      const isFailure = isChapterNonCompliant(response.html_content)
-
-      if (isFailure) {
-        // 🔴 RED LIGHT: VALIDATION FAILED
-        // Show the Error HTML (Red Box) directly in the chat
+      // CHECK FOR FAILURE
+      if (isChapterNonCompliant(htmlContent)) {
+        // 🔴 FAIL CASE: Show error, stay on same question
         addAIMessage(`❌ ${language === 'bm' 
           ? 'Jawapan anda tidak memenuhi piawaian MPPHM 2020. Sila cuba jawab semula.'
           : 'Your answer does not meet MPPHM 2020 standards. Please try again.'
         }`)
         
-        // Show the detailed error/correction instructions from JamAI
-        addAIMessage(response.html_content)
+        // Show the detailed error from JamAI
+        addAIMessage(htmlContent)
         
-        // CRITICAL: DO NOT increment currentChapter - user must try again
+        // DO NOT increment currentChapter - user must try again
         return
       }
 
-      // 🟢 GREEN LIGHT: VALIDATION PASSED
-      // 1. Save the validated HTML to our final document array
-      setFinalChapters(prev => {
-        const updated = [...prev]
-        updated[currentChapter] = response.html_content
-        return updated
-      })
+      // 🟢 PASS CASE: Save HTML and move to next question
+      setFinalChapters(prev => [...prev, htmlContent])
       
-      // 2. Show success indicator
       addAIMessage(language === 'bm' 
-        ? '✅ Jawapan diterima! Analisis halal lulus. (Compliance Check: PASS)'
-        : '✅ Answer accepted! Halal analysis passed. (Compliance Check: PASS)'
+        ? '✅ Jawapan diterima! Analisis halal lulus. Terima kasih!'
+        : '✅ Answer accepted! Halal analysis passed. Thank you!'
       )
       
-      // 3. Move to Next Question
       setTimeout(() => {
         if (currentChapter < CHAPTERS.length - 1) {
           const nextChapter = currentChapter + 1
           setCurrentChapter(nextChapter)
           addAIMessage(language === 'bm' ? CHAPTERS[nextChapter].question : CHAPTERS[nextChapter].questionEn)
         } else {
-          // All questions done!
           addAIMessage(language === 'bm'
             ? '🎉 Tahniah! Semua jawapan anda telah lulus validasi MPPHM 2020! Manual anda sudah siap untuk dimuat turun.'
             : '🎉 Congratulations! All your answers have passed MPPHM 2020 validation! Your manual is ready to download.'
@@ -380,27 +315,109 @@ export default function IHCSArchitect() {
     } catch (error) {
       setIsAnalyzing(false)
       addAIMessage(language === 'bm'
-        ? `⚠️ Ralat sambungan. Sila cuba lagi.`
-        : `⚠️ Connection error. Please try again.`
+        ? `❌ Ralat: ${(error as Error).message}. Sila cuba lagi.`
+        : `❌ Error: ${(error as Error).message}. Please try again.`
       )
       console.error('Validation error:', error)
     }
   }
 
-  // This function is now simplified - no need to generate, just prepare PDF from stored HTML
-  const prepareFinalPDF = () => {
-    // Store the combined HTML chapters for PDF conversion
-    const fullManualHTML = finalChapters
-      .map((html, idx) => `<section data-chapter="Seksyen ${idx + 1}">\n${html}\n</section>`)
-      .join('\n\n')
-    
-    localStorage.setItem('ihcs-manual-html', fullManualHTML)
-    localStorage.setItem('ihcs-company-name', companyName)
-    
-    addAIMessage(language === 'bm'
-      ? '✅ Manual siap! Klik butang "Muat Turun PDF" untuk download. 📄'
-      : '✅ Manual ready! Click "Download PDF" button to download. 📄'
+  // Helper function to check if a chapter failed validation
+  const isChapterNonCompliant = (htmlContent: string): boolean => {
+    // Check for the specific error keywords from JamAI prompt
+    return (
+      htmlContent.includes("PROSEDUR DITOLAK") ||
+      htmlContent.includes("NON-COMPLIANT") ||
+      htmlContent.includes("alert-danger") ||
+      htmlContent.includes("RALAT")
     )
+  }
+
+  const generatePDF = async () => {
+    setIsGenerating(true)
+    
+    try {
+      // Extract company name from first answer (company_info)
+      const companyInfo = answers.company_info || ''
+      // Split by comma or "jenis" keyword to get just the company name
+      const companyName = companyInfo.split(/,|jenis/i)[0]?.trim() || 'Syarikat'
+      
+      // Call API route to get generated HTML from JamAI
+      const response = await fetch('/api/generate-ihcs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName,
+          businessType: 'Perkhidmatan Makanan',
+          responses: answers
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to generate IHCS')
+      }
+      
+      const result = await response.json()
+      
+      // VALIDATION CHECK: Scan for non-compliant chapters
+      const failedChapters: string[] = []
+      
+      if (result.chapters && Array.isArray(result.chapters)) {
+        result.chapters.forEach((chapter: any, index: number) => {
+          const htmlContent = chapter.generatedHTML || ''
+          if (isChapterNonCompliant(htmlContent)) {
+            failedChapters.push(`${language === 'bm' ? 'Bab' : 'Chapter'} ${index + 1}: ${chapter.title}`)
+          }
+        })
+      }
+      
+      // If any chapters failed validation, STOP and show error
+      if (failedChapters.length > 0) {
+        setIsGenerating(false)
+        
+        const errorMessage = language === 'bm'
+          ? `⚠️ AMARAN: Manual tidak boleh dijana.\n\n` +
+            `Beberapa jawapan anda melanggar piawaian MPPHM 2020 (Risiko Non-Halal dikesan).\n\n` +
+            `Bab yang gagal:\n${failedChapters.join('\n')}\n\n` +
+            `Sila semak semula jawapan anda dan cuba lagi.`
+          : `⚠️ WARNING: Manual cannot be generated.\n\n` +
+            `Some of your answers violate MPPHM 2020 standards (Non-Halal risks detected).\n\n` +
+            `Failed chapters:\n${failedChapters.join('\n')}\n\n` +
+            `Please review your answers and try again.`
+        
+        // Show error in chat with red styling
+        addAIMessage(`❌ ${errorMessage}`)
+        
+        // Also show browser alert
+        alert(errorMessage)
+        
+        return // STOP! Do not generate PDF
+      }
+      
+      // ALL CHAPTERS PASSED - Proceed with PDF generation
+      // Store the generated HTML for PDF conversion
+      localStorage.setItem('ihcs-manual-html', result.generatedManualHTML || '')
+      localStorage.setItem('ihcs-company-name', companyName)
+      localStorage.setItem('ihcs-chapters', JSON.stringify(result.chapters))
+      
+      // Success!
+      setIsGenerating(false)
+      setPdfReady(true)
+      setPdfUrl('/generate-pdf') // Placeholder, actual PDF generated on download
+      
+      addAIMessage(language === 'bm'
+        ? '✅ Tahniah! Manual anda memenuhi piawaian MPPHM 2020. Anda boleh preview dan download sekarang. 📄'
+        : '✅ Congratulations! Your manual meets MPPHM 2020 standards. You can preview and download now. 📄'
+      )
+    } catch (error) {
+      setIsGenerating(false)
+      addAIMessage(language === 'bm'
+        ? `Maaf, berlaku masalah: ${(error as Error).message} ❌`
+        : `Sorry, there was an error: ${(error as Error).message} ❌`
+      )
+      console.error('Generation error:', error)
+    }
   }
 
   const downloadPDF = async () => {
@@ -630,7 +647,30 @@ export default function IHCSArchitect() {
             </div>
           </div>
 
-          {/* No separate Generate button needed - validation happens in real-time */}
+          {/* Generate Button */}
+          {currentChapter >= CHAPTERS.length - 1 && Object.keys(answers).length >= CHAPTERS.length && !pdfReady && (
+            <div className="p-4 bg-white border-t border-gray-200">
+              <div className="max-w-3xl mx-auto">
+                <button
+                  onClick={generatePDF}
+                  disabled={isGenerating}
+                  className="w-full py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-[1.02] hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center gap-3"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      {text.generating}
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-5 h-5" />
+                      {text.generateBtn}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* PDF Ready Actions */}
           {pdfReady && (
@@ -662,28 +702,22 @@ export default function IHCSArchitect() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !isAnalyzing && handleSend()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder={text.typeAnswer}
-                  disabled={isAnalyzing}
-                  className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#C5E86C] focus:border-[#C5E86C] text-[#2D4A3E] placeholder-gray-400 disabled:opacity-50"
+                  className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#C5E86C] focus:border-[#C5E86C] text-[#2D4A3E] placeholder-gray-400"
                 />
                 <button
                   onClick={() => alert(text.voiceSoon)}
-                  disabled={isAnalyzing}
-                  className="p-4 bg-[#F5F1E8] text-[#2D4A3E] rounded-2xl hover:bg-[#C5E86C]/30 transition-colors disabled:opacity-50"
+                  className="p-4 bg-[#F5F1E8] text-[#2D4A3E] rounded-2xl hover:bg-[#C5E86C]/30 transition-colors"
                 >
                   <Mic className="w-5 h-5" />
                 </button>
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim() || isAnalyzing}
+                  disabled={!input.trim()}
                   className="px-6 py-4 bg-[#C5E86C] text-[#2D4A3E] rounded-2xl font-bold hover:bg-[#B5D85C] hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
                 >
-                  {isAnalyzing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
+                  <Send className="w-4 h-4" />
                   {text.send}
                 </button>
               </div>

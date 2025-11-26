@@ -236,8 +236,6 @@ export default function IHCSArchitect() {
     ]
 
     try {
-      console.log('🚀 Sending to Backend:', payload) // Debug Log 1
-
       const response = await fetch('/api/generate-ihcs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -245,49 +243,22 @@ export default function IHCSArchitect() {
       })
 
       if (!response.ok) {
-        throw new Error(`Network Error: ${response.statusText}`)
+        throw new Error('Network response was not ok')
       }
 
       const result = await response.json()
-      console.log('📩 Raw JamAI Response:', result) // Debug Log 2: CHECK THIS IN CONSOLE
 
-      // --- ROBUST DATA EXTRACTION START ---
-      // We try multiple paths to find the data, just in case
-      let generatedHTML = ''
-
-      // Path 1: Standard JamAI Action Table response
-      if (result.rows && result.rows[0]?.columns?.formal_content?.text) {
-        generatedHTML = result.rows[0].columns.formal_content.text
-      } 
-      // Path 2: Alternative structure (from our API wrapper)
-      else if (result.results && result.results[0]?.formal_content) {
-        generatedHTML = result.results[0].formal_content
-      }
-      // Path 3: Direct column access (simplified response)
-      else if (result.html_content) {
-        generatedHTML = result.html_content
-      }
-      // Path 4: Direct formal_content property
-      else if (result.formal_content) {
-        generatedHTML = result.formal_content
-      }
-      
-      if (!generatedHTML) {
-        console.error('❌ Could not find "formal_content" in response. Check Column Names!')
-        console.error('Response structure:', JSON.stringify(result, null, 2))
-        throw new Error('Data missing from response')
-      }
-      // --- ROBUST DATA EXTRACTION END ---
+      // Extract HTML from formal_content
+      const generatedHTML = result.results?.[0]?.formal_content || result.html_content || ''
 
       return {
         html_content: generatedHTML,
         status: 'success'
       }
     } catch (error) {
-      console.error('🔥 CRITICAL ERROR:', error)
+      console.error('Error sending to JamAI:', error)
       return {
-        // We return the error as text so you can see it in the chat bubble
-        html_content: `<div class='alert alert-danger'>System Error: ${(error as Error).message}</div>`,
+        html_content: '<div class="alert alert-danger">System Error: Could not validate answer.</div>',
         status: 'error'
       }
     }

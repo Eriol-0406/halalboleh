@@ -210,8 +210,6 @@ export async function analyzeProduct(
   request: AnalyzeProductRequest
 ): Promise<AnalyzeProductResponse> {
   try {
-    // Initialize client for Ingredient Guard project
-    const jamai = getIngredientGuardClient()
     const tableId = 'Chatgpt_interface'
     
     // Upload files to JamAI if they exist

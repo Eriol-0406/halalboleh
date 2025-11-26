@@ -107,13 +107,7 @@ export default function IHCSArchitect() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [answers, setAnswers] = useState<Record<string, string>>({})
-  
-  // NEW: Store validated HTML chapters as they are generated
-  const [finalChapters, setFinalChapters] = useState<string[]>([])
-  const [companyName, setCompanyName] = useState('')
-  
   const [isTyping, setIsTyping] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false) // NEW: For real-time validation
   const [isGenerating, setIsGenerating] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string>('')
@@ -204,283 +198,96 @@ export default function IHCSArchitect() {
     setMessages(prev => [...prev, { role: 'user', content, timestamp: new Date() }])
   }
 
-  // Helper function to check if a chapter failed validation
-  const isChapterNonCompliant = (htmlContent: string): boolean => {
-    return (
-      htmlContent.includes("PROSEDUR DITOLAK") ||
-      htmlContent.includes("NON-COMPLIANT") ||
-      htmlContent.includes("alert-danger") ||
-      htmlContent.includes("RALAT")
-    )
-  }
-
-  // Send single answer to JamAI for real-time validation
-  const sendToJamAI = async (
-    userAnswer: string,
-    chapterIndex: number,
-    companyNameParam: string,
-    businessType: string
-  ): Promise<{ html_content: string; status: string }> => {
-    // Map chapter index to Seksyen number
-    const chapterLabel = `Seksyen ${chapterIndex + 1}`
-
-    // Construct payload - single row for JamAI
-    const payload = [
-      {
-        company_name: companyNameParam,
-        business_type: businessType,
-        user_answer: userAnswer,
-        chapter_number: chapterLabel,
-        language: 'Bahasa Malaysia'
-      }
-    ]
-
-    try {
-      console.log('🚀 Sending to Backend:', payload) // Debug Log 1
-
-      const response = await fetch('/api/generate-ihcs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: payload })
-      })
-
-      if (!response.ok) {
-        throw new Error(`Network Error: ${response.statusText}`)
-      }
-
-      const result = await response.json()
-      console.log('📩 Raw JamAI Response:', result) // Debug Log 2: CHECK THIS IN CONSOLE
-
-      // --- ROBUST DATA EXTRACTION START ---
-      // We try multiple paths to find the data, just in case
-      let generatedHTML = ''
-
-      // Path 1: Standard JamAI Action Table response
-      if (result.rows && result.rows[0]?.columns?.formal_content?.text) {
-        generatedHTML = result.rows[0].columns.formal_content.text
-      } 
-      // Path 2: Alternative structure (from our API wrapper)
-      else if (result.results && result.results[0]?.formal_content) {
-        generatedHTML = result.results[0].formal_content
-      }
-      // Path 3: Direct column access (simplified response)
-      else if (result.html_content) {
-        generatedHTML = result.html_content
-      }
-      // Path 4: Direct formal_content property
-      else if (result.formal_content) {
-        generatedHTML = result.formal_content
-      }
-      
-      if (!generatedHTML) {
-        console.error('❌ Could not find "formal_content" in response. Check Column Names!')
-        console.error('Response structure:', JSON.stringify(result, null, 2))
-        throw new Error('Data missing from response')
-      }
-      // --- ROBUST DATA EXTRACTION END ---
-
-      return {
-        html_content: generatedHTML,
-        status: 'success'
-      }
-    } catch (error) {
-      console.error('🔥 CRITICAL ERROR:', error)
-      return {
-        // We return the error as text so you can see it in the chat bubble
-        html_content: `<div class='alert alert-danger'>System Error: ${(error as Error).message}</div>`,
-        status: 'error'
-      }
-    }
-  }
-
-  const handleSend = async () => {
-    if (!input.trim() || isAnalyzing) return
+  const handleSend = () => {
+    if (!input.trim()) return
 
     const userInput = input.trim()
     addUserMessage(userInput)
     setInput('')
 
-    // Save answer temporarily
+    // Save answer
     const chapter = CHAPTERS[currentChapter]
     setAnswers(prev => ({ ...prev, [chapter.field]: userInput }))
 
-    // Extract company name from first answer if this is chapter 0
-    let currentCompanyName = companyName
-    if (currentChapter === 0 && !companyName) {
-      currentCompanyName = userInput.split(/,|jenis/i)[0]?.trim() || 'Syarikat'
-      setCompanyName(currentCompanyName)
-    }
-
-    // REAL-TIME VALIDATION: Send to JamAI immediately (The Gatekeeper)
-    setIsAnalyzing(true)
-    addAIMessage(language === 'bm' 
-      ? '🔍 Menganalisis jawapan anda mengikut piawaian MPPHM 2020...'
-      : '🔍 Analyzing your answer against MPPHM 2020 standards...'
-    )
-
-    try {
-      // Call JamAI with single answer
-      const response = await sendToJamAI(
-        userInput,
-        currentChapter,
-        currentCompanyName || 'Syarikat',
-        'Perkhidmatan Makanan'
-      )
-
-      setIsAnalyzing(false)
-
-      // CHECK FOR FAILURE (The Gatekeeper Check)
-      const isFailure = isChapterNonCompliant(response.html_content)
-
-      if (isFailure) {
-        // 🔴 RED LIGHT: VALIDATION FAILED
-        // Show the Error HTML (Red Box) directly in the chat
-        addAIMessage(`❌ ${language === 'bm' 
-          ? 'Jawapan anda tidak memenuhi piawaian MPPHM 2020. Sila cuba jawab semula.'
-          : 'Your answer does not meet MPPHM 2020 standards. Please try again.'
-        }`)
-        
-        // Show the detailed error/correction instructions from JamAI
-        addAIMessage(response.html_content)
-        
-        // CRITICAL: DO NOT increment currentChapter - user must try again
-        return
-      }
-
-      // 🟢 GREEN LIGHT: VALIDATION PASSED
-      // 1. Save the validated HTML to our final document array
-      setFinalChapters(prev => {
-        const updated = [...prev]
-        updated[currentChapter] = response.html_content
-        return updated
-      })
-      
-      // 2. Show success indicator
+    // AI acknowledges and moves to next chapter
+    setIsTyping(true)
+    setTimeout(() => {
+      setIsTyping(false)
       addAIMessage(language === 'bm' 
-        ? '✅ Jawapan diterima! Analisis halal lulus. (Compliance Check: PASS)'
-        : '✅ Answer accepted! Halal analysis passed. (Compliance Check: PASS)'
+        ? 'Terima kasih! Saya dah catat jawapan Puan/Encik. ✓'
+        : 'Thank you! I have recorded your answer. ✓'
       )
       
-      // 3. Move to Next Question
       setTimeout(() => {
         if (currentChapter < CHAPTERS.length - 1) {
           const nextChapter = currentChapter + 1
           setCurrentChapter(nextChapter)
           addAIMessage(language === 'bm' ? CHAPTERS[nextChapter].question : CHAPTERS[nextChapter].questionEn)
         } else {
-          // All questions done!
           addAIMessage(language === 'bm'
-            ? '🎉 Tahniah! Semua jawapan anda telah lulus validasi MPPHM 2020! Manual anda sudah siap untuk dimuat turun.'
-            : '🎉 Congratulations! All your answers have passed MPPHM 2020 validation! Your manual is ready to download.'
+            ? 'Tahniah! Kita dah selesai semua soalan. Sekarang saya akan generate Manual IHCS untuk syarikat Puan/Encik. Klik butang "Jana Manual IHCS" untuk mula!'
+            : 'Congratulations! We have completed all questions. Now I will generate the IHCS Manual for your company. Click "Generate IHCS Manual" to start!'
           )
-          setPdfReady(true)
         }
       }, 1500)
+    }, 1000)
+  }
 
-    } catch (error) {
-      setIsAnalyzing(false)
+  const generatePDF = async () => {
+    setIsGenerating(true)
+    
+    try {
+      // Extract company name from first answer (company_info)
+      const companyInfo = answers.company_info || ''
+      // Split by comma or "jenis" keyword to get just the company name
+      const companyName = companyInfo.split(/,|jenis/i)[0]?.trim() || 'Syarikat'
+      
+      // Call API route instead of direct import
+      const response = await fetch('/api/generate-ihcs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName,
+          businessType: 'Perkhidmatan Makanan', // You can make this dynamic
+          responses: answers
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate IHCS')
+      }
+      
+      const result = await response.json()
+      
+      // Success!
+      setIsGenerating(false)
+      setPdfReady(true)
+      setPdfUrl(result.pdfUrl)
+      
+      // Store PDF URL for download
+      localStorage.setItem('ihcs-pdf-url', result.pdfUrl)
+      
       addAIMessage(language === 'bm'
-        ? `⚠️ Ralat sambungan. Sila cuba lagi.`
-        : `⚠️ Connection error. Please try again.`
+        ? 'Manual siap! Anda boleh preview dan download sekarang. 📄'
+        : 'Manual ready! You can preview and download now. 📄'
       )
-      console.error('Validation error:', error)
+    } catch (error) {
+      setIsGenerating(false)
+      addAIMessage(language === 'bm'
+        ? 'Maaf, berlaku masalah semasa menjana manual. Sila cuba lagi. ❌'
+        : 'Sorry, there was an error generating the manual. Please try again. ❌'
+      )
+      console.error('Generation error:', error)
     }
   }
 
-  // This function is now simplified - no need to generate, just prepare PDF from stored HTML
-  const prepareFinalPDF = () => {
-    // Store the combined HTML chapters for PDF conversion
-    const fullManualHTML = finalChapters
-      .map((html, idx) => `<section data-chapter="Seksyen ${idx + 1}">\n${html}\n</section>`)
-      .join('\n\n')
-    
-    localStorage.setItem('ihcs-manual-html', fullManualHTML)
-    localStorage.setItem('ihcs-company-name', companyName)
-    
-    addAIMessage(language === 'bm'
-      ? '✅ Manual siap! Klik butang "Muat Turun PDF" untuk download. 📄'
-      : '✅ Manual ready! Click "Download PDF" button to download. 📄'
-    )
-  }
-
-  const downloadPDF = async () => {
-    try {
-      const html = localStorage.getItem('ihcs-manual-html')
-      const companyName = localStorage.getItem('ihcs-company-name') || 'Company'
-      
-      if (!html) {
-        alert('Please generate the manual first.')
-        return
-      }
-
-      // Dynamically import jspdf and html2canvas
-      const jsPDF = (await import('jspdf')).default
-      const html2canvas = (await import('html2canvas')).default
-
-      // Create a temporary container for the HTML content
-      const container = document.createElement('div')
-      container.style.position = 'absolute'
-      container.style.left = '-9999px'
-      container.style.width = '210mm' // A4 width
-      container.style.padding = '20mm'
-      container.style.backgroundColor = 'white'
-      container.style.fontFamily = 'Arial, sans-serif'
-      container.innerHTML = `
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D4A3E; font-size: 28px; margin-bottom: 10px;">MANUAL SISTEM KAWALAN HALAL DALAMAN (IHCS)</h1>
-          <h2 style="color: #666; font-size: 18px; margin-bottom: 5px;">${companyName}</h2>
-          <p style="color: #999; font-size: 14px;">Generated by AMANA IHCS Auto-Architect</p>
-          <hr style="border: none; border-top: 3px solid #C5E86C; margin: 20px 0;">
-        </div>
-        ${html}
-      `
-      document.body.appendChild(container)
-
-      // Convert HTML to canvas
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      })
-
-      // Remove temporary container
-      document.body.removeChild(container)
-
-      // Create PDF
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF('p', 'mm', 'a4')
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = pdfWidth
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width
-      
-      let heightLeft = imgHeight
-      let position = 0
-
-      // Add first page
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-      heightLeft -= pdfHeight
-
-      // Add more pages if content exceeds one page
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight
-        pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pdfHeight
-      }
-
-      // Download the PDF
-      const fileName = `IHCS_Manual_${companyName.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
-      pdf.save(fileName)
-
-      addAIMessage(language === 'bm'
-        ? `✅ PDF berjaya dimuat turun: ${fileName}`
-        : `✅ PDF successfully downloaded: ${fileName}`
-      )
-    } catch (error) {
-      console.error('PDF generation error:', error)
-      alert(`Failed to generate PDF: ${(error as Error).message}`)
+  const downloadPDF = () => {
+    const url = pdfUrl || localStorage.getItem('ihcs-pdf-url')
+    if (url) {
+      // Open in new tab
+      window.open(url, '_blank')
+    } else {
+      alert('PDF URL not found. Please generate the manual again.')
     }
   }
 
@@ -630,7 +437,30 @@ export default function IHCSArchitect() {
             </div>
           </div>
 
-          {/* No separate Generate button needed - validation happens in real-time */}
+          {/* Generate Button */}
+          {currentChapter >= CHAPTERS.length - 1 && Object.keys(answers).length >= CHAPTERS.length && !pdfReady && (
+            <div className="p-4 bg-white border-t border-gray-200">
+              <div className="max-w-3xl mx-auto">
+                <button
+                  onClick={generatePDF}
+                  disabled={isGenerating}
+                  className="w-full py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-[1.02] hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center gap-3"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      {text.generating}
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-5 h-5" />
+                      {text.generateBtn}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* PDF Ready Actions */}
           {pdfReady && (
@@ -662,28 +492,22 @@ export default function IHCSArchitect() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !isAnalyzing && handleSend()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder={text.typeAnswer}
-                  disabled={isAnalyzing}
-                  className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#C5E86C] focus:border-[#C5E86C] text-[#2D4A3E] placeholder-gray-400 disabled:opacity-50"
+                  className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#C5E86C] focus:border-[#C5E86C] text-[#2D4A3E] placeholder-gray-400"
                 />
                 <button
                   onClick={() => alert(text.voiceSoon)}
-                  disabled={isAnalyzing}
-                  className="p-4 bg-[#F5F1E8] text-[#2D4A3E] rounded-2xl hover:bg-[#C5E86C]/30 transition-colors disabled:opacity-50"
+                  className="p-4 bg-[#F5F1E8] text-[#2D4A3E] rounded-2xl hover:bg-[#C5E86C]/30 transition-colors"
                 >
                   <Mic className="w-5 h-5" />
                 </button>
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim() || isAnalyzing}
+                  disabled={!input.trim()}
                   className="px-6 py-4 bg-[#C5E86C] text-[#2D4A3E] rounded-2xl font-bold hover:bg-[#B5D85C] hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
                 >
-                  {isAnalyzing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
+                  <Send className="w-4 h-4" />
                   {text.send}
                 </button>
               </div>
@@ -741,33 +565,14 @@ export default function IHCSArchitect() {
 
 function MessageBubble({ message }: { message: Message }) {
   if (message.role === 'ai') {
-    // Check if message contains error/rejection keywords
-    const isError = message.content.includes('PROSEDUR DITOLAK') || 
-                    message.content.includes('NON-COMPLIANT') || 
-                    message.content.includes('RALAT') ||
-                    message.content.includes('⚠️') ||
-                    message.content.includes('❌')
-    
     return (
       <div className="flex items-start gap-3 mb-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-          isError 
-            ? 'bg-gradient-to-br from-red-600 to-red-700' 
-            : 'bg-gradient-to-br from-[#2D4A3E] to-[#3D5A4E]'
-        }`}>
-          <Sparkles className={`w-5 h-5 ${isError ? 'text-red-100' : 'text-[#C5E86C]'}`} />
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2D4A3E] to-[#3D5A4E] flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-5 h-5 text-[#C5E86C]" />
         </div>
-        <div className={`rounded-2xl rounded-tl-none px-5 py-4 shadow-sm max-w-xl ${
-          isError 
-            ? 'bg-red-50 border-2 border-red-300 border-l-4' 
-            : 'bg-white border border-gray-200'
-        }`}>
-          <p className={`leading-relaxed whitespace-pre-line ${
-            isError ? 'text-red-900 font-medium' : 'text-[#2D4A3E]'
-          }`}>{message.content}</p>
-          <span className={`text-xs mt-2 block ${
-            isError ? 'text-red-500' : 'text-gray-400'
-          }`}>
+        <div className="bg-white rounded-2xl rounded-tl-none px-5 py-4 shadow-sm border border-gray-200 max-w-xl">
+          <p className="text-[#2D4A3E] leading-relaxed">{message.content}</p>
+          <span className="text-xs text-gray-400 mt-2 block">
             {message.timestamp.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
