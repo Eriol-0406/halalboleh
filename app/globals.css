@@ -2,246 +2,172 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   PADU THEME - GLOBAL STYLES
+   Colors: Cream #F5F1E8, Lime #C5E86C, Dark Green #2D4A3E
+   ============================================ */
+
 @layer base {
   body {
-    /* Clean white background */
-    @apply bg-white text-gray-900;
+    @apply bg-[#F5F1E8] text-gray-900;
+  }
+
+  .font-serif {
+    font-family: var(--font-playfair), Georgia, serif;
+  }
+
+  .font-sans {
+    font-family: var(--font-inter), system-ui, sans-serif;
   }
 }
 
-/* Animated gradient blobs */
-@keyframes blob1 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(100px, 50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-50px, 100px) scale(0.9);
-  }
-}
+/* ============================================
+   ANIMATIONS
+   ============================================ */
 
-@keyframes blob2 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-100px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(50px, -100px) scale(0.9);
-  }
-}
-
-@keyframes blob3 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-50px, 50px) scale(1.1);
-  }
-  66% {
-    transform: translate(100px, -50px) scale(0.9);
-  }
-}
-
-/* Slow zoom animation for hero background */
 @keyframes slow-zoom {
-  0%, 100% { 
-    transform: scale(1); 
-  }
-  50% { 
-    transform: scale(1.05); 
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 .animate-slow-zoom {
   animation: slow-zoom 20s ease-in-out infinite;
 }
 
-.blob1 {
-  animation: blob1 20s ease-in-out infinite;
+@keyframes blob1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(100px, 50px) scale(1.1); }
+  66% { transform: translate(-50px, 100px) scale(0.9); }
 }
 
-.blob2 {
-  animation: blob2 25s ease-in-out infinite;
+@keyframes blob2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-100px, -50px) scale(1.1); }
+  66% { transform: translate(50px, -100px) scale(0.9); }
 }
 
-.blob3 {
-  animation: blob3 30s ease-in-out infinite;
-}
+.blob1 { animation: blob1 20s ease-in-out infinite; }
+.blob2 { animation: blob2 25s ease-in-out infinite; }
 
-/* Custom scrollbar */
+/* ============================================
+   CUSTOM SCROLLBAR
+   ============================================ */
+
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-900;
+  @apply bg-[#F5F1E8];
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-emerald-400/50 rounded-full;
+  @apply bg-[#2D4A3E]/30 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-emerald-400/70;
+  @apply bg-[#2D4A3E]/50;
 }
+
+/* ============================================
+   COMPONENTS - PADU THEME
+   ============================================ */
 
 @layer components {
-  /* Glass card styles */
-  .glass-card {
-    /* Slightly warmer translucent surface for better legibility */
-    @apply bg-emerald-900/10 backdrop-blur-md border border-emerald-500/20 rounded-3xl p-6 transition-all duration-300;
+  /* Backgrounds */
+  .bg-padu-cream { @apply bg-[#F5F1E8]; }
+  .bg-padu-dark { @apply bg-[#2D4A3E]; }
+  .bg-padu-lime { @apply bg-[#C5E86C]; }
+  .bg-padu-olive { @apply bg-[#8B7355]; }
+
+  /* Text Colors */
+  .text-padu-dark { @apply text-[#2D4A3E]; }
+  .text-padu-lime { @apply text-[#C5E86C]; }
+
+  /* Section Backgrounds */
+  .section-cream {
+    @apply bg-[#F5F1E8];
   }
 
-  .glass-card-hover {
-    @apply glass-card hover:bg-emerald-800/20 hover:border-emerald-400/30 hover:shadow-lg;
+  .section-white {
+    @apply bg-white;
   }
 
-  /* Button styles */
+  /* Cards */
+  .card-white {
+    @apply bg-white rounded-2xl p-6 shadow-sm border border-gray-200;
+  }
+
+  .card-glass {
+    @apply bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-200;
+  }
+
+  /* Buttons - Primary */
   .btn-primary {
-    /* Primary CTA: deep green gradient to match new light theme accents */
-    @apply bg-gradient-to-r from-emerald-700 to-emerald-500 text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200;
+    @apply bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200;
   }
 
-  .btn-secondary {
-    @apply bg-emerald-900/20 backdrop-blur-xl border border-emerald-500/30 text-white font-semibold px-8 py-4 rounded-2xl hover:bg-emerald-800/30 hover:border-emerald-400/50 active:scale-95 transition-all duration-300;
+  /* Buttons - Secondary (Lime) */
+  .btn-lime {
+    @apply bg-[#C5E86C] text-[#2D4A3E] font-bold px-6 py-3 rounded-xl hover:bg-[#B5D85C] hover:scale-105 active:scale-95 transition-all duration-200;
   }
 
+  /* Buttons - Outline */
+  .btn-outline {
+    @apply bg-white border-2 border-[#2D4A3E] text-[#2D4A3E] font-semibold px-6 py-3 rounded-xl hover:bg-[#C5E86C]/20 active:scale-95 transition-all duration-200;
+  }
+
+  /* Buttons - Ghost */
   .btn-ghost {
-    @apply text-emerald-100 font-semibold px-4 py-2 rounded-full hover:bg-emerald-900/20 hover:text-white active:scale-95 transition-all duration-200;
+    @apply text-white font-semibold px-4 py-2 rounded-full hover:bg-white/10 active:scale-95 transition-all duration-200;
   }
 
-  /* Input styles */
-  .input-dark {
-    @apply w-full bg-emerald-900/20 backdrop-blur-xl border border-emerald-500/30 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder:text-emerald-200/40 transition-all duration-300;
-  }
-
-  .select-dark {
-    @apply w-full bg-emerald-900/20 backdrop-blur-xl border border-emerald-500/30 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent appearance-none cursor-pointer transition-all duration-300;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2314B8A6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    background-size: 1.25rem;
-    padding-right: 2.5rem;
-  }
-
-  .select-dark option {
-    @apply bg-[#13131A] text-white;
-  }
-
-  /* Badge styles */
-  .badge-success {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-emerald-400/10 border border-emerald-400/20 text-emerald-200 rounded-full font-semibold text-sm;
-  }
-
-  .badge-warning {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-amber-400/10 border border-amber-400/20 text-amber-200 rounded-full font-semibold text-sm;
-  }
-
-  .badge-error {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-red-500/15 border border-red-500/20 text-red-200 rounded-full font-semibold text-sm;
-  }
-
-  .badge-info {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-emerald-400/10 border border-emerald-400/20 text-emerald-100 rounded-full font-semibold text-sm;
-  }
-
-  /* Text styles */
-  .gradient-text {
-    /* warm amber → deep green for headings */
-    @apply bg-gradient-to-r from-amber-400 via-amber-300 to-emerald-600 bg-clip-text text-transparent;
-  }
-
-  /* Background styles */
-  .bg-surface {
-    @apply bg-[#13131A];
-  }
-
-  .bg-elevated {
-    @apply bg-[#1A1A24];
-  }
-
-  /* Card styles (for app pages that need white cards) */
-  .card {
-    @apply bg-white rounded-2xl p-5 shadow-md;
-  }
-
-  .btn-primary-legacy {
-    @apply w-full bg-gradient-to-r from-halal-primary to-halal-primary-dark text-white font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all;
-  }
-
-  .btn-secondary-legacy {
-    @apply w-full bg-white text-halal-primary font-semibold py-4 px-6 rounded-xl border-2 border-halal-primary hover:bg-halal-primary-light/10 active:scale-95 transition-all;
-  }
-
+  /* Input Fields */
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-halal-primary focus:border-transparent transition-all;
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5E86C] focus:border-[#C5E86C] text-[#2D4A3E] placeholder-gray-400 transition-all;
   }
 
-  /* Lower section shared background using the food photo motif (subtle, darkened) */
-  /* Lower sections: light / white theme background and panels
-     Keeps hero untouched. Use `.lower-section-bg-photo` to opt into photo if needed. */
-    /* warm beige / cream background like the reference */
-    .lower-section-bg {
-      background-color: #F6F4ED; /* warm cream */
-      background-image: linear-gradient(180deg, rgba(246,244,237,0.9), rgba(246,244,237,1));
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-
-    /* Our Services dark yellow background (section behind service cards) */
-    .our-services-bg {
-      /* requested yellow: #eed348 */
-      background-color: #eed348;
-      background-image: linear-gradient(180deg, rgba(238,211,72,0.06), rgba(238,211,72,0.04));
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-
-  /* Fallback class to use the photographic motif if needed (blurred + dark overlay) */
-  .lower-section-bg-photo {
-    position: relative;
-    background-color: #eef2f3;
-    background-image: url('/food.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+  /* Badges */
+  .badge-lime {
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#C5E86C] text-[#2D4A3E] rounded-full font-semibold text-sm;
   }
 
-  /* White card panel for sections */
-  /* (consolidated later in file) */
+  .badge-dark {
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#2D4A3E] text-white rounded-full font-semibold text-sm;
+  }
 
-  /* Slightly larger container spacing for airy layout */
-    .section-container {
-      @apply max-w-7xl mx-auto px-8 py-28;
-    }
-
-  /* Badge styles adapted for light theme */
   .badge-success {
-    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#F1EFEA] text-emerald-800 border border-[#ECEAE5] rounded-full font-semibold text-sm;
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#C5E86C]/20 text-[#2D4A3E] border border-[#C5E86C] rounded-full font-semibold text-sm;
   }
 
   .badge-warning {
-    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#FFF6EA] text-amber-800 border border-[#FFF1DD] rounded-full font-semibold text-sm;
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-800 border border-amber-300 rounded-full font-semibold text-sm;
   }
 
   .badge-error {
-    @apply inline-flex items-center gap-2 px-3 py-1 bg-red-50 text-red-700 border border-red-100 rounded-full font-semibold text-sm;
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-red-100 text-red-800 border border-red-300 rounded-full font-semibold text-sm;
   }
 
   .badge-info {
-    @apply inline-flex items-center gap-2 px-3 py-1 bg-[#EEF9F4] text-emerald-800 border border-[#E7F3EC] rounded-full font-semibold text-sm;
+    @apply inline-flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/20 text-white rounded-full font-semibold text-sm;
   }
 
-  /* Panel used inside sections to create elevated white cards */
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-amber-400 via-yellow-400 to-emerald-400 bg-clip-text text-transparent;
+  }
+
+  .gradient-text-dark {
+    @apply bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] bg-clip-text text-transparent;
+  }
+
+  /* Section Container */
+  .section-container {
+    @apply max-w-7xl mx-auto px-6 py-20 md:py-28;
+  }
+
+  /* Section Panel (White Card) */
   .section-panel {
-    @apply bg-white text-gray-900 shadow-lg border border-gray-100 rounded-2xl p-8 transition-all;
+    @apply bg-white text-gray-900 shadow-lg border border-gray-100 rounded-2xl p-8;
   }
 }
-
-

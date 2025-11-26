@@ -1,17 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Playfair_Display } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' })
 
 export const metadata: Metadata = {
-  title: 'Halal-X - AI-Powered JAKIM Certification Assistant',
+  title: 'AMANA - AI-Powered JAKIM Certification Assistant',
   description: 'Replace RM3,500/month Halal Executive with RM50/month AI Assistant. Powered by EmbeddedLLM JamAI Base.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Halal-X',
+    title: 'AMANA',
   },
 }
 
@@ -19,7 +20,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#16A085',
+  themeColor: '#2D4A3E',
 }
 
 export default function RootLayout({
@@ -33,7 +34,9 @@ export default function RootLayout({
         <link rel="icon" href="/icon-192.png" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={`${inter.variable} ${playfair.variable} ${inter.className}`}>
+        {children}
+      </body>
     </html>
   )
 }

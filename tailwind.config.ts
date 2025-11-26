@@ -63,7 +63,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'sans-serif'],
+        serif: ['var(--font-playfair)', 'Playfair Display', 'Georgia', 'serif'],
       },
       scale: {
         '98': '0.98',

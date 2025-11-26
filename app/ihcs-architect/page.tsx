@@ -11,7 +11,10 @@ import {
   Loader2,
   Download,
   RefreshCw,
-  MessageSquare
+  MessageSquare,
+  ChevronRight,
+  Sparkles,
+  Book
 } from 'lucide-react'
 import LanguageToggle from '@/components/LanguageToggle'
 import { Language } from '@/lib/translations'
@@ -25,45 +28,66 @@ type Message = {
 const CHAPTERS = [
   {
     id: 1,
+    titleBm: 'Polisi Halal',
+    titleEn: 'Halal Policy',
     question: 'Apakah nama syarikat dan matlamat halal anda?',
     questionEn: 'What is your company name and halal objectives?',
-    field: 'company_info'
+    field: 'company_info',
+    icon: '🏢'
   },
   {
     id: 2,
+    titleBm: 'Kawalan Bahan Mentah',
+    titleEn: 'Raw Material Control',
     question: 'Bagaimana anda semak bahan mentah yang diterima?',
     questionEn: 'How do you verify raw materials received?',
-    field: 'raw_material_verification'
+    field: 'raw_material_verification',
+    icon: '📦'
   },
   {
     id: 3,
+    titleBm: 'Rekod Pembelian',
+    titleEn: 'Purchase Records',
     question: 'Adakah anda simpan resit pembelian? Berapa lama?',
     questionEn: 'Do you keep purchase receipts? For how long?',
-    field: 'purchase_records'
+    field: 'purchase_records',
+    icon: '🧾'
   },
   {
     id: 4,
+    titleBm: 'Prosedur Pembersihan',
+    titleEn: 'Cleaning Procedures',
     question: 'Macam mana anda basuh peralatan? Ada SOP tak?',
     questionEn: 'How do you wash equipment? Do you have SOPs?',
-    field: 'cleaning_procedures'
+    field: 'cleaning_procedures',
+    icon: '🧹'
   },
   {
     id: 5,
+    titleBm: 'Tanggungjawab Halal',
+    titleEn: 'Halal Responsibility',
     question: 'Siapa bertanggungjawab untuk halal di syarikat?',
     questionEn: 'Who is responsible for halal in the company?',
-    field: 'halal_responsibility'
+    field: 'halal_responsibility',
+    icon: '👤'
   },
   {
     id: 6,
+    titleBm: 'Rekod Latihan',
+    titleEn: 'Training Records',
     question: 'Adakah anda ada rekod latihan halal untuk staff?',
     questionEn: 'Do you have halal training records for staff?',
-    field: 'training_records'
+    field: 'training_records',
+    icon: '📚'
   },
   {
     id: 7,
+    titleBm: 'Kebolehkesanan',
+    titleEn: 'Traceability',
     question: 'Bagaimana anda kesan produk jika ada masalah (traceability)?',
     questionEn: 'How do you trace products if there are issues (traceability)?',
-    field: 'traceability_system'
+    field: 'traceability_system',
+    icon: '🔍'
   }
 ]
 
@@ -75,10 +99,50 @@ export default function IHCSArchitect() {
   const [input, setInput] = useState('')
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [isTyping, setIsTyping] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const t = {
+    en: {
+      title: 'IHCS Auto-Architect',
+      subtitle: 'AI-Powered Manual Generator',
+      chapter: 'Chapter',
+      complete: 'Complete',
+      typeAnswer: 'Type your answer... (Manglish/BM/EN)',
+      send: 'Send',
+      generating: 'Generating Manual...',
+      generateBtn: 'Generate IHCS Manual',
+      downloadBtn: 'Download PDF',
+      pages: '50 pages',
+      reset: 'Reset',
+      preview: 'PDF Preview',
+      manual: 'IHCS Manual',
+      generatedFrom: 'Generated from your answers',
+      voiceSoon: 'Voice input - coming soon!',
+      resetConfirm: 'Reset interview? All answers will be deleted.',
+    },
+    bm: {
+      title: 'Auto-Arkitek IHCS',
+      subtitle: 'Penjana Manual Berkuasa AI',
+      chapter: 'Bab',
+      complete: 'Selesai',
+      typeAnswer: 'Taip jawapan anda... (Manglish/BM/EN)',
+      send: 'Hantar',
+      generating: 'Menjana Manual...',
+      generateBtn: 'Jana Manual IHCS',
+      downloadBtn: 'Muat Turun PDF',
+      pages: '50 muka surat',
+      reset: 'Set Semula',
+      preview: 'Pratonton PDF',
+      manual: 'Manual IHCS',
+      generatedFrom: 'Dijana daripada jawapan anda',
+      voiceSoon: 'Input suara - akan datang!',
+      resetConfirm: 'Set semula temubual? Semua jawapan akan dipadam.',
+    }
+  }
+
+  const text = t[language]
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -104,9 +168,12 @@ export default function IHCSArchitect() {
   useEffect(() => {
     if (messages.length === 0) {
       setTimeout(() => {
-        addAIMessage('Assalamualaikum! Saya akan bantu Puan/Encik buat IHCS Manual. Kita akan bincang 7 topik penting. Ready? Mari kita mulakan!')
+        addAIMessage(language === 'bm' 
+          ? 'Assalamualaikum! Saya akan bantu Puan/Encik buat Manual IHCS. Kita akan bincang 7 topik penting. Ready? Mari kita mulakan!'
+          : 'Assalamualaikum! I will help you create your IHCS Manual. We will discuss 7 important topics. Ready? Let\'s begin!'
+        )
         setTimeout(() => {
-          addAIMessage(CHAPTERS[0].question)
+          addAIMessage(language === 'bm' ? CHAPTERS[0].question : CHAPTERS[0].questionEn)
         }, 1500)
       }, 500)
     }
@@ -135,16 +202,21 @@ export default function IHCSArchitect() {
     setIsTyping(true)
     setTimeout(() => {
       setIsTyping(false)
-      addAIMessage(`Terima kasih! Saya dah catat jawapan Puan/Encik. ✓`)
+      addAIMessage(language === 'bm' 
+        ? 'Terima kasih! Saya dah catat jawapan Puan/Encik. ✓'
+        : 'Thank you! I have recorded your answer. ✓'
+      )
       
       setTimeout(() => {
         if (currentChapter < CHAPTERS.length - 1) {
           const nextChapter = currentChapter + 1
           setCurrentChapter(nextChapter)
-          addAIMessage(CHAPTERS[nextChapter].question)
+          addAIMessage(language === 'bm' ? CHAPTERS[nextChapter].question : CHAPTERS[nextChapter].questionEn)
         } else {
-          // Interview complete
-          addAIMessage('Tahniah! Kita dah selesai semua soalan. Sekarang saya akan generate IHCS Manual untuk syarikat Puan/Encik. Klik butang "Generate Manual" untuk mula!')
+          addAIMessage(language === 'bm'
+            ? 'Tahniah! Kita dah selesai semua soalan. Sekarang saya akan generate Manual IHCS untuk syarikat Puan/Encik. Klik butang "Jana Manual IHCS" untuk mula!'
+            : 'Congratulations! We have completed all questions. Now I will generate the IHCS Manual for your company. Click "Generate IHCS Manual" to start!'
+          )
         }
       }, 1500)
     }, 1000)
@@ -152,21 +224,22 @@ export default function IHCSArchitect() {
 
   const generatePDF = () => {
     setIsGenerating(true)
-    // Simulate PDF generation
     setTimeout(() => {
       setIsGenerating(false)
       setPdfReady(true)
-      addAIMessage('Manual siap! Anda boleh preview dan download sekarang. 📄')
+      addAIMessage(language === 'bm'
+        ? 'Manual siap! Anda boleh preview dan download sekarang. 📄'
+        : 'Manual ready! You can preview and download now. 📄'
+      )
     }, 3000)
   }
 
   const downloadPDF = () => {
-    // In production: use jsPDF to generate actual PDF
     alert('PDF download - in production, this would download a 50-page IHCS manual based on your answers!')
   }
 
   const resetInterview = () => {
-    if (confirm('Reset interview? All answers will be deleted.')) {
+    if (confirm(text.resetConfirm)) {
       setMessages([])
       setAnswers({})
       setCurrentChapter(0)
@@ -177,21 +250,26 @@ export default function IHCSArchitect() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F4ED] flex flex-col">
+    <div className="min-h-screen bg-[#F5F1E8]">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button 
                 onClick={() => router.push('/')} 
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-[#C5E86C]/20 rounded-xl transition-colors"
               >
-                <ArrowLeft className="w-5 h-5 text-gray-700" />
+                <ArrowLeft className="w-5 h-5 text-[#2D4A3E]" />
               </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">IHCS Auto-Architect</h1>
-                <p className="text-xs text-gray-500">AI-Powered Manual Generator</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2D4A3E] to-[#3D5A4E] flex items-center justify-center">
+                  <Book className="w-5 h-5 text-[#C5E86C]" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-[#2D4A3E]">{text.title}</h1>
+                  <p className="text-xs text-gray-500">{text.subtitle}</p>
+                </div>
               </div>
             </div>
             <LanguageToggle language={language} onLanguageChange={setLanguage} />
@@ -199,82 +277,129 @@ export default function IHCSArchitect() {
         </div>
       </header>
 
-      {/* Progress Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">
-              Chapter {currentChapter + 1}/{CHAPTERS.length}
-            </span>
-            <span className="text-sm text-gray-500">
-              {Math.round(((currentChapter + 1) / CHAPTERS.length) * 100)}% Complete
-            </span>
+      <div className="flex h-[calc(100vh-80px)]">
+        {/* Left Sidebar - Chapter Progress */}
+        <div className="hidden lg:block w-72 bg-white border-r border-gray-200 p-6 overflow-y-auto">
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Progress
+            </h3>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] transition-all duration-500"
+                  style={{ width: `${((currentChapter + 1) / CHAPTERS.length) * 100}%` }}
+                />
+              </div>
+              <span className="text-sm font-bold text-[#2D4A3E]">
+                {Math.round(((currentChapter + 1) / CHAPTERS.length) * 100)}%
+              </span>
+            </div>
           </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-500"
-              style={{ width: `${((currentChapter + 1) / CHAPTERS.length) * 100}%` }}
-            />
-          </div>
-          {/* Chapter indicators */}
-          <div className="flex items-center gap-2 mt-3">
+
+          <div className="space-y-2">
             {CHAPTERS.map((ch, idx) => (
               <div 
-                key={ch.id} 
-                className={`flex-1 h-1 rounded-full transition-all ${
-                  idx <= currentChapter ? 'bg-emerald-500' : 'bg-gray-200'
+                key={ch.id}
+                className={`p-3 rounded-xl transition-all ${
+                  idx === currentChapter
+                    ? 'bg-[#C5E86C]/30 border-2 border-[#C5E86C]'
+                    : idx < currentChapter
+                    ? 'bg-[#2D4A3E]/10'
+                    : 'bg-gray-50'
                 }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden flex">
-        <div className={`flex-1 flex flex-col ${showPreview ? 'lg:w-2/3' : 'w-full'}`}>
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
-            {messages.map((msg, idx) => (
-              <MessageBubble key={idx} message={msg} />
-            ))}
-            
-            {isTyping && (
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
-                  <MessageSquare className="w-5 h-5 text-white" />
-                </div>
-                <div className="bg-white rounded-2xl rounded-tl-none px-5 py-3 shadow-sm border border-gray-200">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${
+                    idx < currentChapter
+                      ? 'bg-[#2D4A3E] text-white'
+                      : idx === currentChapter
+                      ? 'bg-[#C5E86C] text-[#2D4A3E]'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {idx < currentChapter ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      ch.id
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold truncate ${
+                      idx <= currentChapter ? 'text-[#2D4A3E]' : 'text-gray-400'
+                    }`}>
+                      {language === 'bm' ? ch.titleBm : ch.titleEn}
+                    </p>
                   </div>
                 </div>
               </div>
-            )}
-            
-            <div ref={messagesEndRef} />
+            ))}
+          </div>
+        </div>
+
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Mobile Progress Bar */}
+          <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-[#2D4A3E]">
+                {text.chapter} {currentChapter + 1}/{CHAPTERS.length}
+              </span>
+              <span className="text-sm text-gray-500">
+                {Math.round(((currentChapter + 1) / CHAPTERS.length) * 100)}% {text.complete}
+              </span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] transition-all duration-500"
+                style={{ width: `${((currentChapter + 1) / CHAPTERS.length) * 100}%` }}
+              />
+            </div>
           </div>
 
-          {/* Generate Button (after all chapters) */}
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="max-w-3xl mx-auto">
+              {messages.map((msg, idx) => (
+                <MessageBubble key={idx} message={msg} />
+              ))}
+              
+              {isTyping && (
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2D4A3E] to-[#3D5A4E] flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-5 h-5 text-[#C5E86C]" />
+                  </div>
+                  <div className="bg-white rounded-2xl rounded-tl-none px-5 py-4 shadow-sm border border-gray-200">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 bg-[#2D4A3E] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 bg-[#2D4A3E] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 bg-[#2D4A3E] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Generate Button */}
           {currentChapter === CHAPTERS.length - 1 && Object.keys(answers).length === CHAPTERS.length && !pdfReady && (
             <div className="p-4 bg-white border-t border-gray-200">
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-3xl mx-auto">
                 <button
                   onClick={generatePDF}
                   disabled={isGenerating}
-                  className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-2xl font-bold text-lg hover:scale-[1.02] hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-[1.02] hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center gap-3"
                 >
                   {isGenerating ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Generating Manual...
+                      {text.generating}
                     </>
                   ) : (
                     <>
                       <FileText className="w-5 h-5" />
-                      Generate IHCS Manual
+                      {text.generateBtn}
                     </>
                   )}
                 </button>
@@ -285,20 +410,20 @@ export default function IHCSArchitect() {
           {/* PDF Ready Actions */}
           {pdfReady && (
             <div className="p-4 bg-white border-t border-gray-200">
-              <div className="max-w-4xl mx-auto flex gap-3">
+              <div className="max-w-3xl mx-auto flex gap-3">
                 <button
                   onClick={downloadPDF}
-                  className="flex-1 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-2xl font-bold text-lg hover:scale-[1.02] hover:shadow-xl transition-all shadow-lg flex items-center justify-center gap-2"
+                  className="flex-1 py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-[1.02] hover:shadow-xl transition-all shadow-lg flex items-center justify-center gap-3"
                 >
                   <Download className="w-5 h-5" />
-                  Download PDF (50 pages)
+                  {text.downloadBtn} ({text.pages})
                 </button>
                 <button
                   onClick={resetInterview}
-                  className="px-6 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-2xl font-semibold hover:border-emerald-500 hover:text-emerald-700 transition-all flex items-center gap-2"
+                  className="px-6 py-4 bg-white border-2 border-[#2D4A3E] text-[#2D4A3E] rounded-2xl font-semibold hover:bg-[#C5E86C]/20 transition-all flex items-center gap-2"
                 >
                   <RefreshCw className="w-5 h-5" />
-                  Reset
+                  {text.reset}
                 </button>
               </div>
             </div>
@@ -307,59 +432,74 @@ export default function IHCSArchitect() {
           {/* Input Box */}
           {!pdfReady && (
             <div className="p-4 bg-white border-t border-gray-200">
-              <div className="max-w-4xl mx-auto flex gap-2">
+              <div className="max-w-3xl mx-auto flex gap-3">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Type your answer... (Manglish/BM/EN)"
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  placeholder={text.typeAnswer}
+                  className="flex-1 px-5 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#C5E86C] focus:border-[#C5E86C] text-[#2D4A3E] placeholder-gray-400"
                 />
                 <button
-                  onClick={() => alert('Voice input - coming soon!')}
-                  className="p-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-emerald-100 hover:text-emerald-600 transition-colors"
+                  onClick={() => alert(text.voiceSoon)}
+                  className="p-4 bg-[#F5F1E8] text-[#2D4A3E] rounded-2xl hover:bg-[#C5E86C]/30 transition-colors"
                 >
                   <Mic className="w-5 h-5" />
                 </button>
                 <button
                   onClick={handleSend}
                   disabled={!input.trim()}
-                  className="px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-xl font-semibold hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
+                  className="px-6 py-4 bg-[#C5E86C] text-[#2D4A3E] rounded-2xl font-bold hover:bg-[#B5D85C] hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  Send
+                  {text.send}
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* PDF Preview Sidebar (Desktop) */}
+        {/* Right Sidebar - PDF Preview */}
         {pdfReady && (
-          <div className="hidden lg:block w-1/3 border-l border-gray-200 bg-white p-4 overflow-y-auto">
-            <div className="sticky top-0 bg-white pb-4 border-b border-gray-200 mb-4">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-emerald-600" />
-                PDF Preview
+          <div className="hidden lg:block w-80 border-l border-gray-200 bg-white p-6 overflow-y-auto">
+            <div className="sticky top-0 bg-white pb-4 border-b border-gray-200 mb-6">
+              <h3 className="font-bold text-[#2D4A3E] flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#C5E86C]" />
+                {text.preview}
               </h3>
             </div>
-            <div className="bg-gray-100 rounded-xl p-8 text-center">
-              <div className="bg-white shadow-lg rounded-lg p-8 mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">IHCS Manual</h2>
-                <p className="text-gray-600 mb-4">{answers.company_info || 'Your Company'}</p>
-                <div className="text-left space-y-4 text-sm">
+            
+            {/* PDF Preview Card */}
+            <div className="bg-[#F5F1E8] rounded-2xl p-4">
+              <div className="bg-white shadow-lg rounded-xl p-6 mb-4">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2D4A3E] to-[#3D5A4E] flex items-center justify-center">
+                    <Book className="w-8 h-8 text-[#C5E86C]" />
+                  </div>
+                </div>
+                <h2 className="text-xl font-bold text-[#2D4A3E] text-center mb-1">{text.manual}</h2>
+                <p className="text-gray-600 text-center text-sm mb-6">{answers.company_info || 'Your Company'}</p>
+                
+                <div className="space-y-3">
                   {CHAPTERS.map((ch) => (
-                    <div key={ch.id} className="border-l-4 border-emerald-500 pl-3">
-                      <div className="font-semibold text-gray-800">Chapter {ch.id}</div>
-                      <div className="text-gray-600 text-xs mt-1">
-                        {answers[ch.field]?.substring(0, 60) || 'No answer'}...
+                    <div key={ch.id} className="flex items-start gap-3 p-2 rounded-lg bg-[#F5F1E8]">
+                      <div className="w-6 h-6 rounded-md bg-[#C5E86C] flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-[#2D4A3E]">{ch.id}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[#2D4A3E] text-xs">
+                          {language === 'bm' ? ch.titleBm : ch.titleEn}
+                        </div>
+                        <div className="text-gray-500 text-xs truncate">
+                          {answers[ch.field]?.substring(0, 30) || 'No answer'}...
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-              <p className="text-sm text-gray-500">50-page manual generated from your answers</p>
+              <p className="text-xs text-gray-500 text-center">{text.generatedFrom}</p>
             </div>
           </div>
         )}
@@ -371,12 +511,12 @@ export default function IHCSArchitect() {
 function MessageBubble({ message }: { message: Message }) {
   if (message.role === 'ai') {
     return (
-      <div className="flex items-start gap-3 animate-in fade-in slide-in-from-left duration-300">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-teal-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
-          <MessageSquare className="w-5 h-5 text-white" />
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2D4A3E] to-[#3D5A4E] flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-5 h-5 text-[#C5E86C]" />
         </div>
-        <div className="bg-white rounded-2xl rounded-tl-none px-5 py-3 shadow-sm border border-gray-200 max-w-2xl">
-          <p className="text-gray-800 leading-relaxed">{message.content}</p>
+        <div className="bg-white rounded-2xl rounded-tl-none px-5 py-4 shadow-sm border border-gray-200 max-w-xl">
+          <p className="text-[#2D4A3E] leading-relaxed">{message.content}</p>
           <span className="text-xs text-gray-400 mt-2 block">
             {message.timestamp.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })}
           </span>
@@ -386,15 +526,15 @@ function MessageBubble({ message }: { message: Message }) {
   }
 
   return (
-    <div className="flex items-start gap-3 justify-end animate-in fade-in slide-in-from-right duration-300">
-      <div className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl rounded-tr-none px-5 py-3 shadow-sm max-w-2xl">
-        <p className="leading-relaxed">{message.content}</p>
-        <span className="text-xs text-emerald-100 mt-2 block">
+    <div className="flex items-start gap-3 justify-end mb-4">
+      <div className="bg-gradient-to-r from-[#C5E86C] to-[#A8D946] text-[#2D4A3E] rounded-2xl rounded-tr-none px-5 py-4 shadow-sm max-w-xl">
+        <p className="leading-relaxed font-medium">{message.content}</p>
+        <span className="text-xs text-[#2D4A3E]/60 mt-2 block">
           {message.timestamp.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
-      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-        <span className="text-gray-700 font-bold text-sm">U</span>
+      <div className="w-10 h-10 rounded-xl bg-[#2D4A3E] flex items-center justify-center flex-shrink-0">
+        <span className="text-[#C5E86C] font-bold text-sm">U</span>
       </div>
     </div>
   )

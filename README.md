@@ -1,4 +1,4 @@
-# PADU — Halal-X: AI-Powered JAKIM Certification Assistant
+# AMANA — Halal-X: AI-Powered JAKIM Certification Assistant
 
 🕌 **Tagline:** AI assistant for JAKIM Halal certification
 
