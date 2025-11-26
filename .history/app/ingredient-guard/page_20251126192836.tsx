@@ -334,14 +334,7 @@ export default function IngredientGuard() {
             <input
               type="text"
               value={input}
-              onChange={(e) => {
-                const newValue = e.target.value
-                setInput(newValue)
-                // Clear audio when typing (WhatsApp behavior: text OR audio, not both)
-                if (newValue.trim() && recordedAudio) {
-                  setRecordedAudio(null)
-                }
-              }}
+              onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={language === 'bm' ? 'Tanya tentang produk halal...' : 'Ask about halal products...'}
               className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5E86C] focus:border-[#C5E86C] text-[#2D4A3E] placeholder-gray-400"
