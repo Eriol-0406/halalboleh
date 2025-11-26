@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import ReactMarkdown from 'react-markdown'
 import { 
   ArrowLeft, 
   Paperclip,
@@ -77,16 +76,13 @@ export default function IngredientGuard() {
         setAttachmentTray({
           ...attachmentTray,
           selectedImage: file,
-          imagePreview: reader.result as string,
-          isOpen: false // Close tray after selecting
+          imagePreview: reader.result as string
         })
       }
       reader.readAsDataURL(file)
     } else {
       alert(text.fileTooLarge)
     }
-    // Reset file input to allow selecting the same file again
-    e.target.value = ''
   }
 
   const handleAudioSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,19 +90,7 @@ export default function IngredientGuard() {
     if (file) {
       setRecordedAudio(file)
       setInput('') // Clear text input when audio is selected
-      setAttachmentTray({ ...attachmentTray, isOpen: false })
     }
-  }
-
-  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setRecordedAudio(file) // Use same state for consistency (only one audio at a time)
-      setInput('') // Clear text when audio is uploaded
-      setAttachmentTray({ ...attachmentTray, isOpen: false })
-    }
-    // Reset file input to allow selecting the same file again
-    e.target.value = ''
   }
 
   const toggleRecording = () => {
@@ -121,7 +105,6 @@ export default function IngredientGuard() {
       // Start recording
       setIsRecording(true)
       setInput('') // Clear text input when starting recording
-      setAttachmentTray({ ...attachmentTray, isOpen: false })
     }
   }
 
@@ -158,57 +141,22 @@ export default function IngredientGuard() {
     }
 
     setMessages(prev => [...prev, userMessage])
-    
-    // Store current values before clearing
-    const textInput = input
-    const imageFile = attachmentTray.selectedImage
-    const audioFile = recordedAudio
-    
-    // Clear inputs
     setInput('')
     setRecordedAudio(null)
     setAttachmentTray({ isOpen: false })
 
-    try {
-      // Call API route to analyze product
-      const formData = new FormData()
-      if (textInput) formData.append('text', textInput)
-      if (imageFile) formData.append('image', imageFile)
-      if (audioFile) formData.append('audio', audioFile)
-
-      const response = await fetch('/api/analyze-product', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to analyze product')
-      }
-
-      const result = await response.json()
-
+    setTimeout(() => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: result.Final_reply || 'No response received from the system.',
+        content: language === 'bm' 
+          ? 'Saya sedang menganalisis produk anda. Ini adalah contoh respons dari AI Assistant. Dalam production, ini akan menggunakan Vercel AI SDK dan JamAI Base untuk memberikan jawapan sebenar tentang status halal produk.'
+          : 'I am analyzing your product. This is a sample response from the AI Assistant. In production, this will use Vercel AI SDK and JamAI Base to provide real answers about the halal status of the product.',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, assistantMessage])
-    } catch (error) {
-      console.error('Failed to analyze product:', error)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: language === 'bm'
-          ? 'Maaf, terdapat masalah semasa menganalisis produk. Sila cuba lagi.'
-          : 'Sorry, there was a problem analyzing the product. Please try again.',
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, errorMessage])
-    } finally {
       setLoading(false)
-    }
+    }, 1500)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -221,7 +169,7 @@ export default function IngredientGuard() {
   return (
     <div className="min-h-screen bg-[#F5F1E8] flex flex-col">
       <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button 
@@ -290,7 +238,7 @@ export default function IngredientGuard() {
         </div>
 
         <div className="border-t border-gray-200 bg-white px-4 py-4 w-full">
-          <div className="max-w-7xl mx-auto w-full">
+          <div className="max-w-5xl mx-auto w-full">
           {(attachmentTray.imagePreview || recordedAudio) && (
             <div className="mb-3 flex gap-2 flex-wrap">
               {attachmentTray.imagePreview && (
@@ -322,7 +270,7 @@ export default function IngredientGuard() {
             </div>
           )}
 
-          {attachmentTray.isOpen && (
+          {attachmentTray.isOpen && !recordedAudio && !isRecording && (
             <div className="mb-3 flex gap-3 p-3 bg-[#F5F1E8] rounded-xl">
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -330,13 +278,6 @@ export default function IngredientGuard() {
               >
                 <ImageIcon className="w-5 h-5" />
                 <span>{language === 'bm' ? 'Gambar' : 'Image'}</span>
-              </button>
-              <button
-                onClick={() => audioInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#2D4A3E] text-[#2D4A3E] rounded-xl font-semibold hover:bg-[#C5E86C]/20 transition-all"
-              >
-                <Mic className="w-5 h-5" />
-                <span>{language === 'bm' ? 'Audio' : 'Audio'}</span>
               </button>
             </div>
           )}
@@ -358,7 +299,7 @@ export default function IngredientGuard() {
           )}
 
           <div className="flex items-center gap-2">
-            {!isRecording && (
+            {!recordedAudio && !isRecording && (
               <button
                 onClick={() => setAttachmentTray({ ...attachmentTray, isOpen: !attachmentTray.isOpen })}
                 className="p-3 hover:bg-[#C5E86C]/20 rounded-xl transition-colors flex-shrink-0"
@@ -370,18 +311,11 @@ export default function IngredientGuard() {
             <input
               type="text"
               value={input}
-              onChange={(e) => {
-                const newValue = e.target.value
-                setInput(newValue)
-                // Clear audio when typing (WhatsApp behavior: text OR audio, not both)
-                if (newValue.trim() && recordedAudio) {
-                  setRecordedAudio(null)
-                }
-              }}
+              onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={language === 'bm' ? 'Tanya tentang produk halal...' : 'Ask about halal products...'}
               className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C5E86C] focus:border-[#C5E86C] text-[#2D4A3E] placeholder-gray-400"
-              disabled={loading || isRecording}
+              disabled={loading || recordedAudio !== null || isRecording}
             />
             
             {/* Show Send button when there's text or attachments, Mic button when empty */}
@@ -418,10 +352,9 @@ export default function IngredientGuard() {
             ref={audioInputRef}
             type="file"
             accept="audio/*"
-            onChange={handleAudioUpload}
+            onChange={handleAudioSelect}
             className="hidden"
           />
-          </div>
         </div>
       </div>
     </div>
@@ -469,13 +402,7 @@ function ChatMessage({ message, language }: { message: Message; language: Langua
               ? 'bg-[#C5E86C] text-[#2D4A3E] rounded-tr-none' 
               : 'bg-white border border-gray-200 text-[#2D4A3E] rounded-tl-none'
           }`}>
-            {isUser ? (
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            ) : (
-              <div className="prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:ml-4 [&>ol]:list-decimal [&>ol]:ml-4 [&>p]:mb-2 [&>*:last-child]:mb-0">
-                <ReactMarkdown>{message.content}</ReactMarkdown>
-              </div>
-            )}
+            <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         )}
 

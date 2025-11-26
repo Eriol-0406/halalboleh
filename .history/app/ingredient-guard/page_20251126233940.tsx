@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import ReactMarkdown from 'react-markdown'
 import { 
   ArrowLeft, 
   Paperclip,
@@ -469,13 +468,7 @@ function ChatMessage({ message, language }: { message: Message; language: Langua
               ? 'bg-[#C5E86C] text-[#2D4A3E] rounded-tr-none' 
               : 'bg-white border border-gray-200 text-[#2D4A3E] rounded-tl-none'
           }`}>
-            {isUser ? (
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            ) : (
-              <div className="prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:ml-4 [&>ol]:list-decimal [&>ol]:ml-4 [&>p]:mb-2 [&>*:last-child]:mb-0">
-                <ReactMarkdown>{message.content}</ReactMarkdown>
-              </div>
-            )}
+            <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         )}
 

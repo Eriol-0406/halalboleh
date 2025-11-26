@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import ReactMarkdown from 'react-markdown'
 import { 
   ArrowLeft, 
   Paperclip,
@@ -158,57 +157,22 @@ export default function IngredientGuard() {
     }
 
     setMessages(prev => [...prev, userMessage])
-    
-    // Store current values before clearing
-    const textInput = input
-    const imageFile = attachmentTray.selectedImage
-    const audioFile = recordedAudio
-    
-    // Clear inputs
     setInput('')
     setRecordedAudio(null)
     setAttachmentTray({ isOpen: false })
 
-    try {
-      // Call API route to analyze product
-      const formData = new FormData()
-      if (textInput) formData.append('text', textInput)
-      if (imageFile) formData.append('image', imageFile)
-      if (audioFile) formData.append('audio', audioFile)
-
-      const response = await fetch('/api/analyze-product', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to analyze product')
-      }
-
-      const result = await response.json()
-
+    setTimeout(() => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: result.Final_reply || 'No response received from the system.',
+        content: language === 'bm' 
+          ? 'Saya sedang menganalisis produk anda. Ini adalah contoh respons dari AI Assistant. Dalam production, ini akan menggunakan Vercel AI SDK dan JamAI Base untuk memberikan jawapan sebenar tentang status halal produk.'
+          : 'I am analyzing your product. This is a sample response from the AI Assistant. In production, this will use Vercel AI SDK and JamAI Base to provide real answers about the halal status of the product.',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, assistantMessage])
-    } catch (error) {
-      console.error('Failed to analyze product:', error)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: language === 'bm'
-          ? 'Maaf, terdapat masalah semasa menganalisis produk. Sila cuba lagi.'
-          : 'Sorry, there was a problem analyzing the product. Please try again.',
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, errorMessage])
-    } finally {
       setLoading(false)
-    }
+    }, 1500)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -469,13 +433,7 @@ function ChatMessage({ message, language }: { message: Message; language: Langua
               ? 'bg-[#C5E86C] text-[#2D4A3E] rounded-tr-none' 
               : 'bg-white border border-gray-200 text-[#2D4A3E] rounded-tl-none'
           }`}>
-            {isUser ? (
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            ) : (
-              <div className="prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:ml-4 [&>ol]:list-decimal [&>ol]:ml-4 [&>p]:mb-2 [&>*:last-child]:mb-0">
-                <ReactMarkdown>{message.content}</ReactMarkdown>
-              </div>
-            )}
+            <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         )}
 

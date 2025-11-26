@@ -6,9 +6,9 @@
 import JamAI from 'jamaibase'
 
 // Initialize JamAI client - PAT should be set in environment or configured
-// Make sure to set JAMAI_API_KEY in your .env.local file
+// Fill in your PAT token here
 const jamai = new JamAI({
-  token: process.env.JAMAI_API_KEY || '',
+  token: '', // Add your PAT here
   projectId: 'proj_045275d84595590cb2eeb709',
   baseURL: 'https://api.jamaibase.com',
 })
@@ -204,6 +204,7 @@ export async function analyzeProduct(
   request: AnalyzeProductRequest
 ): Promise<AnalyzeProductResponse> {
   try {
+    const projectId = 'proj_045275d84595590cb2eeb709'
     const tableId = 'Chatgpt_interface'
     
     // Upload files to JamAI if they exist
@@ -247,35 +248,26 @@ export async function analyzeProduct(
       rowData.Input_Audio = audioUri
     }
 
-    // Add row to Action Table (non-streaming)
-    const response = await jamai.table.addRow({
+    // Add row to Action Table
+    const response = await jamai.table.addTableRows({
       table_type: 'action',
       table_id: tableId,
       data: [rowData],
-      reindex: false,
+      stream: false,
     })
 
-    // Extract response columns from the completion chunks
+    // Extract response columns
     if (!response.rows || response.rows.length === 0) {
       throw new Error('No response rows returned from JamAI')
     }
 
-    const columns = response.rows[0].columns
-    
-    // Helper function to extract text from chat completion
-    const extractText = (column: any): string => {
-      if (!column || !column.choices || column.choices.length === 0) {
-        return ''
-      }
-      const content = column.choices[0].message?.content
-      return typeof content === 'string' ? content : ''
-    }
+    const resultRow = response.rows[0]
     
     return {
-      Final_reply: extractText(columns.Final_reply),
-      Vision_Analysis: extractText(columns.Vision_Analysis),
-      Knowledge_Check_Cert: extractText(columns.Knowledge_Check_Cert),
-      Knowledge_Check_Ingredients: extractText(columns.Knowledge_Check_Ingredients),
+      Final_reply: resultRow.Final_reply?.value || '',
+      Vision_Analysis: resultRow.Vision_Analysis?.value,
+      Knowledge_Check_Cert: resultRow.Knowledge_Check_Cert?.value,
+      Knowledge_Check_Ingredients: resultRow.Knowledge_Check_Ingredients?.value,
     }
   } catch (error) {
     console.error('Product analysis failed:', error)

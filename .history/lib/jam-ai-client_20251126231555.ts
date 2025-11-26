@@ -6,9 +6,9 @@
 import JamAI from 'jamaibase'
 
 // Initialize JamAI client - PAT should be set in environment or configured
-// Make sure to set JAMAI_API_KEY in your .env.local file
+// Fill in your PAT token here
 const jamai = new JamAI({
-  token: process.env.JAMAI_API_KEY || '',
+  token: '', // Add your PAT here
   projectId: 'proj_045275d84595590cb2eeb709',
   baseURL: 'https://api.jamaibase.com',
 })
@@ -260,22 +260,13 @@ export async function analyzeProduct(
       throw new Error('No response rows returned from JamAI')
     }
 
-    const columns = response.rows[0].columns
-    
-    // Helper function to extract text from chat completion
-    const extractText = (column: any): string => {
-      if (!column || !column.choices || column.choices.length === 0) {
-        return ''
-      }
-      const content = column.choices[0].message?.content
-      return typeof content === 'string' ? content : ''
-    }
+    const resultRow = response.rows[0].columns
     
     return {
-      Final_reply: extractText(columns.Final_reply),
-      Vision_Analysis: extractText(columns.Vision_Analysis),
-      Knowledge_Check_Cert: extractText(columns.Knowledge_Check_Cert),
-      Knowledge_Check_Ingredients: extractText(columns.Knowledge_Check_Ingredients),
+      Final_reply: resultRow.Final_reply?.text || '',
+      Vision_Analysis: resultRow.Vision_Analysis?.text,
+      Knowledge_Check_Cert: resultRow.Knowledge_Check_Cert?.text,
+      Knowledge_Check_Ingredients: resultRow.Knowledge_Check_Ingredients?.text,
     }
   } catch (error) {
     console.error('Product analysis failed:', error)

@@ -6,11 +6,9 @@
 import JamAI from 'jamaibase'
 
 // Initialize JamAI client - PAT should be set in environment or configured
-// Make sure to set JAMAI_API_KEY in your .env.local file
 const jamai = new JamAI({
-  token: process.env.JAMAI_API_KEY || '',
-  projectId: 'proj_045275d84595590cb2eeb709',
-  baseURL: 'https://api.jamaibase.com',
+  apiKey: process.env.JAMAI_API_KEY || '', // Fill in your PAT here or use environment variable
+  baseURL: 'https://api.jamaibase.com/api/v1',
 })
 
 export interface IngredientScanRequest {
@@ -194,95 +192,6 @@ export async function validatePreAudit(
   }
 
   return response.json()
-}
-
-/**
- * Analyzes product using JamAI Action Table (Chatgpt_interface)
- * Handles multimodal inputs: text, image, and audio
- */
-export async function analyzeProduct(
-  request: AnalyzeProductRequest
-): Promise<AnalyzeProductResponse> {
-  try {
-    const tableId = 'Chatgpt_interface'
-    
-    // Upload files to JamAI if they exist
-    let imageUri: string | undefined
-    let audioUri: string | undefined
-
-    if (request.imageFile) {
-      try {
-        const imageUploadResponse = await jamai.file.uploadFile({
-          file: request.imageFile,
-        })
-        imageUri = imageUploadResponse.uri
-      } catch (error) {
-        console.error('Image upload failed:', error)
-        throw new Error(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      }
-    }
-
-    if (request.audioFile) {
-      try {
-        const audioUploadResponse = await jamai.file.uploadFile({
-          file: request.audioFile,
-        })
-        audioUri = audioUploadResponse.uri
-      } catch (error) {
-        console.error('Audio upload failed:', error)
-        throw new Error(`Failed to upload audio: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      }
-    }
-
-    // Prepare row data for the Action Table
-    const rowData: Record<string, any> = {
-      Input_text: request.text || '',
-    }
-
-    if (imageUri) {
-      rowData.Input_Image = imageUri
-    }
-
-    if (audioUri) {
-      rowData.Input_Audio = audioUri
-    }
-
-    // Add row to Action Table (non-streaming)
-    const response = await jamai.table.addRow({
-      table_type: 'action',
-      table_id: tableId,
-      data: [rowData],
-      reindex: false,
-    })
-
-    // Extract response columns from the completion chunks
-    if (!response.rows || response.rows.length === 0) {
-      throw new Error('No response rows returned from JamAI')
-    }
-
-    const columns = response.rows[0].columns
-    
-    // Helper function to extract text from chat completion
-    const extractText = (column: any): string => {
-      if (!column || !column.choices || column.choices.length === 0) {
-        return ''
-      }
-      const content = column.choices[0].message?.content
-      return typeof content === 'string' ? content : ''
-    }
-    
-    return {
-      Final_reply: extractText(columns.Final_reply),
-      Vision_Analysis: extractText(columns.Vision_Analysis),
-      Knowledge_Check_Cert: extractText(columns.Knowledge_Check_Cert),
-      Knowledge_Check_Ingredients: extractText(columns.Knowledge_Check_Ingredients),
-    }
-  } catch (error) {
-    console.error('Product analysis failed:', error)
-    throw new Error(
-      `Failed to analyze product: ${error instanceof Error ? error.message : 'Unknown error'}`
-    )
-  }
 }
 
 /**
