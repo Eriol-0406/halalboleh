@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import LanguageToggle from '@/components/LanguageToggle'
 import { Language } from '@/lib/translations'
+import { generateIHCS } from '@/lib/jam-ai-client'
 
 type Message = {
   role: 'ai' | 'user'
@@ -27,67 +28,76 @@ type Message = {
 
 const CHAPTERS = [
   {
-    id: 1,
-    titleBm: 'Polisi Halal',
-    titleEn: 'Halal Policy',
-    question: 'Apakah nama syarikat dan matlamat halal anda?',
-    questionEn: 'What is your company name and halal objectives?',
+    id: 0,
+    titleBm: 'Maklumat Syarikat',
+    titleEn: 'Company Information',
+    question: 'Boleh beritahu nama syarikat dan jenis perniagaan?',
+    questionEn: 'Can you tell me your company name and business type?',
     field: 'company_info',
     icon: '🏢'
   },
   {
+    id: 1,
+    titleBm: 'Komitmen Halal',
+    titleEn: 'Halal Commitment',
+    question: 'Apa komitmen syarikat tentang halal?',
+    questionEn: 'What is your company\'s commitment to halal?',
+    field: 'halal_policy',
+    icon: '📜'
+  },
+  {
     id: 2,
-    titleBm: 'Kawalan Bahan Mentah',
-    titleEn: 'Raw Material Control',
-    question: 'Bagaimana anda semak bahan mentah yang diterima?',
-    questionEn: 'How do you verify raw materials received?',
-    field: 'raw_material_verification',
-    icon: '📦'
+    titleBm: 'Beli Bahan Mentah',
+    titleEn: 'Buying Raw Materials',
+    question: 'Macam mana cara beli bahan mentah? Siapa yang beli?',
+    questionEn: 'How do you buy raw materials? Who buys them?',
+    field: 'purchasing_procedure',
+    icon: '🛒'
   },
   {
     id: 3,
-    titleBm: 'Rekod Pembelian',
-    titleEn: 'Purchase Records',
-    question: 'Adakah anda simpan resit pembelian? Berapa lama?',
-    questionEn: 'Do you keep purchase receipts? For how long?',
-    field: 'purchase_records',
-    icon: '🧾'
+    titleBm: 'Terima Bahan',
+    titleEn: 'Receiving Materials',
+    question: 'Bila supplier hantar barang, macam mana check? Rekod ke tak?',
+    questionEn: 'When supplier delivers, how do you check? Do you record?',
+    field: 'receiving_procedure',
+    icon: '📦'
   },
   {
     id: 4,
-    titleBm: 'Prosedur Pembersihan',
-    titleEn: 'Cleaning Procedures',
-    question: 'Macam mana anda basuh peralatan? Ada SOP tak?',
-    questionEn: 'How do you wash equipment? Do you have SOPs?',
-    field: 'cleaning_procedures',
-    icon: '🧹'
+    titleBm: 'Simpan Bahan',
+    titleEn: 'Storing Materials',
+    question: 'Macam mana simpan bahan mentah? Letak mana?',
+    questionEn: 'How do you store raw materials? Where?',
+    field: 'storage_procedure',
+    icon: '🏪'
   },
   {
     id: 5,
-    titleBm: 'Tanggungjawab Halal',
-    titleEn: 'Halal Responsibility',
-    question: 'Siapa bertanggungjawab untuk halal di syarikat?',
-    questionEn: 'Who is responsible for halal in the company?',
-    field: 'halal_responsibility',
-    icon: '👤'
+    titleBm: 'Bahan Mentah Utama',
+    titleEn: 'Main Ingredients',
+    question: 'Bahan mentah apa yang guna? Beli dari mana?',
+    questionEn: 'What ingredients do you use? Buy from where?',
+    field: 'raw_material_list',
+    icon: '📋'
   },
   {
     id: 6,
-    titleBm: 'Rekod Latihan',
-    titleEn: 'Training Records',
-    question: 'Adakah anda ada rekod latihan halal untuk staff?',
-    questionEn: 'Do you have halal training records for staff?',
-    field: 'training_records',
-    icon: '📚'
+    titleBm: 'Kesan Produk',
+    titleEn: 'Track Products',
+    question: 'Kalau ada masalah, boleh kesan produk ke? Macam mana?',
+    questionEn: 'If there\'s a problem, can you track the product? How?',
+    field: 'traceability_program',
+    icon: '🔍'
   },
   {
     id: 7,
-    titleBm: 'Kebolehkesanan',
-    titleEn: 'Traceability',
-    question: 'Bagaimana anda kesan produk jika ada masalah (traceability)?',
-    questionEn: 'How do you trace products if there are issues (traceability)?',
-    field: 'traceability_system',
-    icon: '🔍'
+    titleBm: 'Tarik Balik Produk',
+    titleEn: 'Product Recall',
+    question: 'Kalau produk ada masalah halal, apa buat?',
+    questionEn: 'If product has halal issue, what to do?',
+    field: 'recall_procedure',
+    icon: '⚠️'
   }
 ]
 
@@ -101,6 +111,7 @@ export default function IHCSArchitect() {
   const [isTyping, setIsTyping] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const t = {
@@ -174,9 +185,10 @@ export default function IHCSArchitect() {
         )
         setTimeout(() => {
           addAIMessage(language === 'bm' ? CHAPTERS[0].question : CHAPTERS[0].questionEn)
-        }, 1500)
+        }, 1000)
       }, 500)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const addAIMessage = (content: string) => {
@@ -222,20 +234,52 @@ export default function IHCSArchitect() {
     }, 1000)
   }
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     setIsGenerating(true)
-    setTimeout(() => {
+    
+    try {
+      // Extract company name from first answer (company_info)
+      const companyInfo = answers.company_info || ''
+      // Split by comma or "jenis" keyword to get just the company name
+      const companyName = companyInfo.split(/,|jenis/i)[0]?.trim() || 'Syarikat'
+      
+      // Call real API
+      const result = await generateIHCS({
+        companyName,
+        businessType: 'Perkhidmatan Makanan', // You can make this dynamic
+        responses: answers
+      })
+      
+      // Success!
       setIsGenerating(false)
       setPdfReady(true)
+      setPdfUrl(result.pdfUrl)
+      
+      // Store PDF URL for download
+      localStorage.setItem('ihcs-pdf-url', result.pdfUrl)
+      
       addAIMessage(language === 'bm'
         ? 'Manual siap! Anda boleh preview dan download sekarang. 📄'
         : 'Manual ready! You can preview and download now. 📄'
       )
-    }, 3000)
+    } catch (error) {
+      setIsGenerating(false)
+      addAIMessage(language === 'bm'
+        ? 'Maaf, berlaku masalah semasa menjana manual. Sila cuba lagi. ❌'
+        : 'Sorry, there was an error generating the manual. Please try again. ❌'
+      )
+      console.error('Generation error:', error)
+    }
   }
 
   const downloadPDF = () => {
-    alert('PDF download - in production, this would download a 50-page IHCS manual based on your answers!')
+    const url = pdfUrl || localStorage.getItem('ihcs-pdf-url')
+    if (url) {
+      // Open in new tab
+      window.open(url, '_blank')
+    } else {
+      alert('PDF URL not found. Please generate the manual again.')
+    }
   }
 
   const resetInterview = () => {
@@ -244,7 +288,9 @@ export default function IHCSArchitect() {
       setAnswers({})
       setCurrentChapter(0)
       setPdfReady(false)
+      setPdfUrl('')
       localStorage.removeItem('ihcs-answers')
+      localStorage.removeItem('ihcs-pdf-url')
       window.location.reload()
     }
   }
@@ -383,7 +429,7 @@ export default function IHCSArchitect() {
           </div>
 
           {/* Generate Button */}
-          {currentChapter === CHAPTERS.length - 1 && Object.keys(answers).length === CHAPTERS.length && !pdfReady && (
+          {currentChapter >= CHAPTERS.length - 1 && Object.keys(answers).length >= CHAPTERS.length && !pdfReady && (
             <div className="p-4 bg-white border-t border-gray-200">
               <div className="max-w-3xl mx-auto">
                 <button

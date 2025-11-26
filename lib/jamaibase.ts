@@ -1,6 +1,7 @@
 // JamAI Base API Integration for JAKIM Certification
 const JAMAI_BASE_URL = process.env.NEXT_PUBLIC_JAMAI_BASE_URL || 'http://localhost:8000'
-const JAMAI_API_KEY = process.env.NEXT_PUBLIC_JAMAI_API_KEY
+const JAMAI_PROJECT_ID = process.env.NEXT_PUBLIC_JAMAI_PROJECT_ID
+const JAMAI_PAT = process.env.NEXT_PUBLIC_JAMAI_PERSONAL_ACCESS_TOKEN
 
 // ============================================
 // KNOWLEDGE TABLE QUERIES
@@ -16,7 +17,8 @@ export async function queryKnowledge(request: KnowledgeQuery): Promise<any> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${JAMAI_API_KEY}`,
+      'Authorization': `Bearer ${JAMAI_PAT}`,
+      'X-Project-Id': JAMAI_PROJECT_ID || '',
     },
     body: JSON.stringify(request),
   })
