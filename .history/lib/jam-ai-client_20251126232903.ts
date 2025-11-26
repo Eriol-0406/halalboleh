@@ -6,9 +6,9 @@
 import JamAI from 'jamaibase'
 
 // Initialize JamAI client - PAT should be set in environment or configured
-// Make sure to set JAMAI_API_KEY in your .env.local file
+// Fill in your PAT token here
 const jamai = new JamAI({
-  token: process.env.JAMAI_API_KEY || '',
+  token: '', // Add your PAT here
   projectId: 'proj_045275d84595590cb2eeb709',
   baseURL: 'https://api.jamaibase.com',
 })

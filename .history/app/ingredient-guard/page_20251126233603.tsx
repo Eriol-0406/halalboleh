@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import ReactMarkdown from 'react-markdown'
 import { 
   ArrowLeft, 
   Paperclip,
@@ -18,6 +17,7 @@ import {
 } from 'lucide-react'
 import LanguageToggle from '@/components/LanguageToggle'
 import { Language } from '@/lib/translations'
+import { analyzeProduct } from '@/lib/jam-ai-client'
 
 interface Message {
   id: string
@@ -170,23 +170,12 @@ export default function IngredientGuard() {
     setAttachmentTray({ isOpen: false })
 
     try {
-      // Call API route to analyze product
-      const formData = new FormData()
-      if (textInput) formData.append('text', textInput)
-      if (imageFile) formData.append('image', imageFile)
-      if (audioFile) formData.append('audio', audioFile)
-
-      const response = await fetch('/api/analyze-product', {
-        method: 'POST',
-        body: formData,
+      // Call JamAI Base analyzeProduct function
+      const result = await analyzeProduct({
+        text: textInput || undefined,
+        imageFile: imageFile || undefined,
+        audioFile: audioFile || undefined,
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to analyze product')
-      }
-
-      const result = await response.json()
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -469,13 +458,7 @@ function ChatMessage({ message, language }: { message: Message; language: Langua
               ? 'bg-[#C5E86C] text-[#2D4A3E] rounded-tr-none' 
               : 'bg-white border border-gray-200 text-[#2D4A3E] rounded-tl-none'
           }`}>
-            {isUser ? (
-              <p className="whitespace-pre-wrap">{message.content}</p>
-            ) : (
-              <div className="prose prose-sm max-w-none [&>ul]:list-disc [&>ul]:ml-4 [&>ol]:list-decimal [&>ol]:ml-4 [&>p]:mb-2 [&>*:last-child]:mb-0">
-                <ReactMarkdown>{message.content}</ReactMarkdown>
-              </div>
-            )}
+            <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         )}
 
