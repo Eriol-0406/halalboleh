@@ -62,112 +62,6 @@ type AuditResult = {
   }>
 }
 
-// Dropzone Wrapper Component for individual drag-and-drop
-interface DropzoneWrapperProps {
-  doc: {
-    type: DocumentType
-    label: string
-    icon: any
-    isSpecial: boolean
-  }
-  hasFile: boolean
-  file: UploadedFile | UploadedFile[] | null
-  language: Language
-  onDrop: (files: File[]) => void
-  onFileSelect: (file: UploadedFile) => void
-  onRemove: () => void
-}
-
-function DropzoneWrapper({ doc, hasFile, file, language, onDrop, onFileSelect, onRemove }: DropzoneWrapperProps) {
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: doc.type === 'photos' 
-      ? { 'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.webp'] }
-      : { 
-          'application/pdf': ['.pdf'],
-          'image/*': ['.jpg', '.jpeg', '.png'],
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
-        },
-    multiple: doc.type === 'photos',
-    onDrop,
-    noClick: false,
-    noKeyboard: false
-  })
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (hasFile && !(e.target as HTMLElement).closest('button')) {
-      e.preventDefault()
-      // Set as selected file for preview
-      if (doc.type === 'photos' && (file as UploadedFile[]).length > 0) {
-        onFileSelect((file as UploadedFile[])[0])
-      } else if (file && !Array.isArray(file)) {
-        onFileSelect(file as UploadedFile)
-      }
-    }
-  }
-
-  return (
-    <div {...getRootProps()} onClick={handleClick}>
-      <input {...getInputProps()} />
-      <div 
-        className={`flex items-center gap-3 p-2.5 rounded-lg border-2 transition-all cursor-pointer group ${
-          isDragActive
-            ? 'bg-[#F9FBE7] border-[#2D4A3E] border-dashed shadow-md'
-            : hasFile 
-            ? 'bg-[#C5E86C]/20 border-[#C5E86C]' 
-            : 'bg-gray-50 border-gray-200 hover:border-[#C5E86C] hover:bg-gray-100'
-        }`}
-      >
-        <div className="flex-shrink-0">
-          {hasFile ? (
-            <CheckCircle className="w-4 h-4 text-[#2D4A3E]" />
-          ) : (
-            <Upload className={`w-4 h-4 transition-colors ${
-              isDragActive ? 'text-[#2D4A3E] animate-bounce' : 'text-gray-400 group-hover:text-[#556B56]'
-            }`} />
-          )}
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <div className={`text-sm font-semibold ${hasFile ? 'text-[#2D4A3E]' : 'text-gray-700'}`}>
-            {doc.label}
-          </div>
-          {isDragActive ? (
-            <div className="text-xs text-[#2D4A3E] font-medium animate-pulse">
-              {language === 'bm' ? 'Lepaskan untuk muat naik' : 'Drop to upload'}
-            </div>
-          ) : hasFile ? (
-            <div className="text-xs text-gray-600 truncate">
-              {doc.type === 'photos' 
-                ? `${(file as UploadedFile[]).length} ${language === 'bm' ? 'gambar' : 'photos'}`
-                : (file as UploadedFile).name
-              }
-            </div>
-          ) : (
-            <div className="text-xs text-gray-500">
-              {language === 'bm' ? 'Klik atau seret fail ke sini' : 'Click or drag file here'}
-            </div>
-          )}
-        </div>
-
-        {hasFile && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onRemove()
-            }}
-            className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export default function PreAudit() {
   const router = useRouter()
   const [language, setLanguage] = useState<Language>('en')
@@ -586,7 +480,7 @@ export default function PreAudit() {
               </div>
 
               {/* Smart Upload List */}
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2">
                 {REQUIRED_DOCS.map((doc) => {
                   const file = getFileForType(doc.type)
                   const hasFile = doc.type === 'photos' 

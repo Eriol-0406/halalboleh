@@ -586,7 +586,7 @@ export default function PreAudit() {
               </div>
 
               {/* Smart Upload List */}
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-2">
                 {REQUIRED_DOCS.map((doc) => {
                   const file = getFileForType(doc.type)
                   const hasFile = doc.type === 'photos' 
