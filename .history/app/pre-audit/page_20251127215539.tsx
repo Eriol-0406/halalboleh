@@ -249,78 +249,29 @@ export default function PreAudit() {
     try {
       const parsed = typeof data === 'string' ? JSON.parse(data) : data
       
-      let report = ''
-      
-      // Overall Status Section
-      report += `## Overall Status\n\n`
+      let report = `## Status Senarai Semak Audit\n\n`
       
       if (parsed.status) {
-        report += `**Status:** ${parsed.status}\n\n`
+        report += `**Status Keseluruhan:** ${parsed.status}\n\n`
       }
       
-      if (parsed.documents_uploaded !== undefined && parsed.documents_total !== undefined) {
-        report += `**Document Progress:** ${parsed.documents_uploaded}/${parsed.documents_total} uploaded\n\n`
+      if (parsed.summary) {
+        report += `## Ringkasan\n\n${parsed.summary}\n\n`
       }
       
-      // Checklist Details Section
-      if (parsed.checklist && Array.isArray(parsed.checklist)) {
-        report += `## Checklist Details\n\n`
-        
-        parsed.checklist.forEach((item: any, idx: number) => {
-          const statusIcon = item.found ? '✅' : (item.skipped ? '⏭️' : '❌')
-          const foundStatus = item.found ? 'Found' : (item.skipped ? 'Skipped' : 'Not Found')
-          
-          report += `**${idx + 1}. ${item.requirement_name || 'Document'}**\n\n`
-          report += `- ${statusIcon} **Status:** ${foundStatus}\n`
-          
-          if (item.filename) {
-            report += `- **Filename:** ${item.filename}\n`
-          }
-          
-          if (item.note) {
-            report += `- **Note:** ${item.note}\n`
-          }
-          
-          report += `\n`
-        })
-      } else if (parsed.items && Array.isArray(parsed.items)) {
-        report += `## Items\n\n`
+      if (parsed.items && Array.isArray(parsed.items)) {
+        report += `## Item Senarai Semak\n\n`
         parsed.items.forEach((item: any, idx: number) => {
-          report += `**${idx + 1}. ${item.item || item.name || item.category || 'Item'}**\n\n`
-          
-          if (item.finding || item.description) {
-            report += `- ${item.finding || item.description}\n`
+          report += `### ${idx + 1}. ${item.item || item.name || 'Item'}\n\n`
+          report += `**Status:** ${item.status || 'N/A'}\n\n`
+          if (item.remarks) {
+            report += `**Catatan:** ${item.remarks}\n\n`
           }
-          
-          if (item.status) {
-            report += `- **Status:** ${item.status}\n`
-          }
-          
-          if (item.severity) {
-            report += `- **Severity:** ${item.severity}\n`
-          }
-          
-          if (item.remarks || item.notes) {
-            report += `- **Remarks:** ${item.remarks || item.notes}\n`
-          }
-          
-          report += `\n`
-        })
-      } else if (parsed.findings && Array.isArray(parsed.findings)) {
-        report += `## Findings\n\n`
-        parsed.findings.forEach((finding: any, idx: number) => {
-          report += `**${idx + 1}. ${finding.category || finding.title || 'Finding'}**\n\n`
-          report += `- ${finding.finding || finding.description || 'N/A'}\n`
-          if (finding.severity) {
-            report += `- **Severity:** ${finding.severity}\n`
-          }
-          report += `\n`
         })
       }
       
       return report
     } catch (error) {
-      console.error('Error formatting checklist report:', error)
       return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
     }
   }
@@ -399,82 +350,31 @@ export default function PreAudit() {
     try {
       const parsed = typeof data === 'string' ? JSON.parse(data) : data
       
-      let report = `## Status Pemeriksaan\n\n`
+      let report = `## Pengesahan Aliran Proses\n\n`
       
-      // Status section
       if (parsed.status) {
         report += `**Status:** ${parsed.status}\n\n`
       }
-      if (parsed.score || parsed.score_deduction) {
-        report += `**Potongan Markah:** ${parsed.score_deduction || parsed.score || 0} markah\n\n`
-      }
       
-      // Executive Summary section
       if (parsed.summary) {
-        report += `## Ringkasan Eksekutif\n\n${parsed.summary}\n\n`
+        report += `## Ringkasan\n\n${parsed.summary}\n\n`
       }
       
-      // Detailed Findings section
       if (parsed.steps && Array.isArray(parsed.steps)) {
-        report += `## Penemuan Terperinci\n\n`
+        report += `## Langkah-Langkah Proses\n\n`
         parsed.steps.forEach((step: any, idx: number) => {
-          report += `### ${idx + 1}. ${step.name || step.title || step.category || 'Langkah'}\n\n`
-          
-          if (step.finding || step.description) {
-            report += `**Penemuan:** ${step.finding || step.description}\n\n`
-          }
-          
-          if (step.is_violation || step.violation) {
-            report += `⚠️ **Pelanggaran:** Ya\n\n`
-          }
-          
+          report += `### Langkah ${idx + 1}: ${step.name || step.title || 'Langkah'}\n\n`
           if (step.status) {
             report += `**Status:** ${step.status}\n\n`
           }
-          
-          if (step.severity) {
-            report += `**Tahap Keseriusan:** ${step.severity}\n\n`
-          }
-          
-          if (step.remarks || step.notes) {
-            report += `**Catatan:** ${step.remarks || step.notes}\n\n`
-          }
-        })
-      } else if (parsed.findings && Array.isArray(parsed.findings)) {
-        report += `## Penemuan Terperinci\n\n`
-        parsed.findings.forEach((finding: any, idx: number) => {
-          report += `### ${idx + 1}. ${finding.category || finding.title || 'Penemuan'}\n\n`
-          report += `**Penemuan:** ${finding.finding || finding.description || 'N/A'}\n\n`
-          if (finding.severity) {
-            report += `**Tahap Keseriusan:** ${finding.severity}\n\n`
-          }
-        })
-      } else if (parsed.observations && Array.isArray(parsed.observations)) {
-        report += `## Penemuan Terperinci\n\n`
-        parsed.observations.forEach((obs: any, idx: number) => {
-          report += `### ${idx + 1}. ${obs.category || obs.title || 'Pemerhatian'}\n\n`
-          report += `**Penemuan:** ${obs.finding || obs.description || 'N/A'}\n\n`
-          if (obs.is_violation) {
-            report += `⚠️ **Pelanggaran:** Ya\n\n`
-          }
-          if (obs.severity) {
-            report += `**Tahap Keseriusan:** ${obs.severity}\n\n`
-          }
-        })
-      } else if (parsed.validation && Array.isArray(parsed.validation)) {
-        report += `## Langkah-Langkah Pengesahan\n\n`
-        parsed.validation.forEach((item: any, idx: number) => {
-          report += `### Langkah ${idx + 1}: ${item.step || item.name || 'Langkah'}\n\n`
-          report += `**Status:** ${item.status || item.result || 'N/A'}\n\n`
-          if (item.remarks) {
-            report += `**Catatan:** ${item.remarks}\n\n`
+          if (step.remarks) {
+            report += `**Catatan:** ${step.remarks}\n\n`
           }
         })
       }
       
       return report
     } catch (error) {
-      console.error('Error formatting process flow report:', error)
       return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
     }
   }

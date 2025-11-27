@@ -210,275 +210,6 @@ export default function PreAudit() {
   }>>([])
   const [isLoadingRequirements, setIsLoadingRequirements] = useState(true)
 
-  // Formatter functions to convert JSON to structured reports
-  const formatHygieneReport = (data: any): string => {
-    if (!data) return ''
-    
-    try {
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data
-      
-      let report = `## Status Pemeriksaan\n\n`
-      report += `**Status:** ${parsed.status || 'N/A'}\n\n`
-      report += `**Potongan Markah:** ${parsed.score_deduction || 0} markah\n\n`
-      
-      report += `## Ringkasan Eksekutif\n\n`
-      report += `${parsed.summary || 'Tiada ringkasan tersedia.'}\n\n`
-      
-      report += `## Penemuan Terperinci\n\n`
-      if (parsed.observations && Array.isArray(parsed.observations)) {
-        parsed.observations.forEach((obs: any, idx: number) => {
-          report += `### ${idx + 1}. ${obs.category || 'Kategori Tidak Diketahui'}\n\n`
-          report += `**Penemuan:** ${obs.finding || 'Tiada penemuan'}\n\n`
-          if (obs.is_violation) {
-            report += `⚠️ **Pelanggaran:** Ya\n\n`
-          }
-          report += `**Tahap Keseriusan:** ${obs.severity || 'N/A'}\n\n`
-        })
-      }
-      
-      return report
-    } catch (error) {
-      console.error('Error formatting hygiene report:', error)
-      return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
-    }
-  }
-
-  const formatChecklistReport = (data: any): string => {
-    if (!data) return ''
-    
-    try {
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data
-      
-      let report = ''
-      
-      // Overall Status Section
-      report += `## Overall Status\n\n`
-      
-      if (parsed.status) {
-        report += `**Status:** ${parsed.status}\n\n`
-      }
-      
-      if (parsed.documents_uploaded !== undefined && parsed.documents_total !== undefined) {
-        report += `**Document Progress:** ${parsed.documents_uploaded}/${parsed.documents_total} uploaded\n\n`
-      }
-      
-      // Checklist Details Section
-      if (parsed.checklist && Array.isArray(parsed.checklist)) {
-        report += `## Checklist Details\n\n`
-        
-        parsed.checklist.forEach((item: any, idx: number) => {
-          const statusIcon = item.found ? '✅' : (item.skipped ? '⏭️' : '❌')
-          const foundStatus = item.found ? 'Found' : (item.skipped ? 'Skipped' : 'Not Found')
-          
-          report += `**${idx + 1}. ${item.requirement_name || 'Document'}**\n\n`
-          report += `- ${statusIcon} **Status:** ${foundStatus}\n`
-          
-          if (item.filename) {
-            report += `- **Filename:** ${item.filename}\n`
-          }
-          
-          if (item.note) {
-            report += `- **Note:** ${item.note}\n`
-          }
-          
-          report += `\n`
-        })
-      } else if (parsed.items && Array.isArray(parsed.items)) {
-        report += `## Items\n\n`
-        parsed.items.forEach((item: any, idx: number) => {
-          report += `**${idx + 1}. ${item.item || item.name || item.category || 'Item'}**\n\n`
-          
-          if (item.finding || item.description) {
-            report += `- ${item.finding || item.description}\n`
-          }
-          
-          if (item.status) {
-            report += `- **Status:** ${item.status}\n`
-          }
-          
-          if (item.severity) {
-            report += `- **Severity:** ${item.severity}\n`
-          }
-          
-          if (item.remarks || item.notes) {
-            report += `- **Remarks:** ${item.remarks || item.notes}\n`
-          }
-          
-          report += `\n`
-        })
-      } else if (parsed.findings && Array.isArray(parsed.findings)) {
-        report += `## Findings\n\n`
-        parsed.findings.forEach((finding: any, idx: number) => {
-          report += `**${idx + 1}. ${finding.category || finding.title || 'Finding'}**\n\n`
-          report += `- ${finding.finding || finding.description || 'N/A'}\n`
-          if (finding.severity) {
-            report += `- **Severity:** ${finding.severity}\n`
-          }
-          report += `\n`
-        })
-      }
-      
-      return report
-    } catch (error) {
-      console.error('Error formatting checklist report:', error)
-      return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
-    }
-  }
-
-  const formatMenuLogicReport = (data: any): string => {
-    if (!data) return ''
-    
-    try {
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data
-      
-      let report = `## Analisis Logik Menu\n\n`
-      
-      if (parsed.status) {
-        report += `**Status:** ${parsed.status}\n\n`
-      }
-      
-      if (parsed.summary) {
-        report += `## Ringkasan\n\n${parsed.summary}\n\n`
-      }
-      
-      if (parsed.findings && Array.isArray(parsed.findings)) {
-        report += `## Penemuan\n\n`
-        parsed.findings.forEach((finding: any, idx: number) => {
-          report += `### ${idx + 1}. ${finding.issue || finding.title || 'Penemuan'}\n\n`
-          if (finding.description) {
-            report += `${finding.description}\n\n`
-          }
-          if (finding.severity) {
-            report += `**Keseriusan:** ${finding.severity}\n\n`
-          }
-        })
-      }
-      
-      return report
-    } catch (error) {
-      return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
-    }
-  }
-
-  const formatCertificationReport = (data: any): string => {
-    if (!data) return ''
-    
-    try {
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data
-      
-      let report = `## Pengesahan Sijil\n\n`
-      
-      if (parsed.status) {
-        report += `**Status Pengesahan:** ${parsed.status}\n\n`
-      }
-      
-      if (parsed.summary) {
-        report += `## Ringkasan\n\n${parsed.summary}\n\n`
-      }
-      
-      if (parsed.certificates && Array.isArray(parsed.certificates)) {
-        report += `## Sijil Disemak\n\n`
-        parsed.certificates.forEach((cert: any, idx: number) => {
-          report += `### ${idx + 1}. ${cert.type || cert.name || 'Sijil'}\n\n`
-          report += `**Status:** ${cert.status || 'N/A'}\n\n`
-          if (cert.remarks) {
-            report += `**Catatan:** ${cert.remarks}\n\n`
-          }
-        })
-      }
-      
-      return report
-    } catch (error) {
-      return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
-    }
-  }
-
-  const formatProcessFlowReport = (data: any): string => {
-    if (!data) return ''
-    
-    try {
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data
-      
-      let report = `## Status Pemeriksaan\n\n`
-      
-      // Status section
-      if (parsed.status) {
-        report += `**Status:** ${parsed.status}\n\n`
-      }
-      if (parsed.score || parsed.score_deduction) {
-        report += `**Potongan Markah:** ${parsed.score_deduction || parsed.score || 0} markah\n\n`
-      }
-      
-      // Executive Summary section
-      if (parsed.summary) {
-        report += `## Ringkasan Eksekutif\n\n${parsed.summary}\n\n`
-      }
-      
-      // Detailed Findings section
-      if (parsed.steps && Array.isArray(parsed.steps)) {
-        report += `## Penemuan Terperinci\n\n`
-        parsed.steps.forEach((step: any, idx: number) => {
-          report += `### ${idx + 1}. ${step.name || step.title || step.category || 'Langkah'}\n\n`
-          
-          if (step.finding || step.description) {
-            report += `**Penemuan:** ${step.finding || step.description}\n\n`
-          }
-          
-          if (step.is_violation || step.violation) {
-            report += `⚠️ **Pelanggaran:** Ya\n\n`
-          }
-          
-          if (step.status) {
-            report += `**Status:** ${step.status}\n\n`
-          }
-          
-          if (step.severity) {
-            report += `**Tahap Keseriusan:** ${step.severity}\n\n`
-          }
-          
-          if (step.remarks || step.notes) {
-            report += `**Catatan:** ${step.remarks || step.notes}\n\n`
-          }
-        })
-      } else if (parsed.findings && Array.isArray(parsed.findings)) {
-        report += `## Penemuan Terperinci\n\n`
-        parsed.findings.forEach((finding: any, idx: number) => {
-          report += `### ${idx + 1}. ${finding.category || finding.title || 'Penemuan'}\n\n`
-          report += `**Penemuan:** ${finding.finding || finding.description || 'N/A'}\n\n`
-          if (finding.severity) {
-            report += `**Tahap Keseriusan:** ${finding.severity}\n\n`
-          }
-        })
-      } else if (parsed.observations && Array.isArray(parsed.observations)) {
-        report += `## Penemuan Terperinci\n\n`
-        parsed.observations.forEach((obs: any, idx: number) => {
-          report += `### ${idx + 1}. ${obs.category || obs.title || 'Pemerhatian'}\n\n`
-          report += `**Penemuan:** ${obs.finding || obs.description || 'N/A'}\n\n`
-          if (obs.is_violation) {
-            report += `⚠️ **Pelanggaran:** Ya\n\n`
-          }
-          if (obs.severity) {
-            report += `**Tahap Keseriusan:** ${obs.severity}\n\n`
-          }
-        })
-      } else if (parsed.validation && Array.isArray(parsed.validation)) {
-        report += `## Langkah-Langkah Pengesahan\n\n`
-        parsed.validation.forEach((item: any, idx: number) => {
-          report += `### Langkah ${idx + 1}: ${item.step || item.name || 'Langkah'}\n\n`
-          report += `**Status:** ${item.status || item.result || 'N/A'}\n\n`
-          if (item.remarks) {
-            report += `**Catatan:** ${item.remarks}\n\n`
-          }
-        })
-      }
-      
-      return report
-    } catch (error) {
-      console.error('Error formatting process flow report:', error)
-      return typeof data === 'string' ? data : JSON.stringify(data, null, 2)
-    }
-  }
-
   const t = {
     en: {
       title: 'Pre-Audit Readiness',
@@ -840,23 +571,11 @@ export default function PreAudit() {
       }
 
       const data = await response.json()
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('✅ [Frontend] API Response Received:')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('Final_report_card:', data.Final_report_card ? `✅ ${data.Final_report_card.substring(0, 100)}...` : '❌ Empty/Null')
-      console.log('Visual_Hygiene_Check:', data.Visual_Hygiene_Check ? '✅ Present' : '❌ Empty')
-      console.log('Audit_checklist_status:', data.Audit_checklist_status ? '✅ Present' : '❌ Empty')
-      console.log('Audit_menu_logic:', data.Audit_menu_logic ? '✅ Present' : '❌ Empty')
-      console.log('Certification_Validation:', data.Certification_Validation ? '✅ Present' : '❌ Empty')
-      console.log('ProcessFlow_Validation:', data.ProcessFlow_Validation ? '✅ Present' : '❌ Empty')
-      console.log('Legacy auditReport:', data.auditReport ? `✅ ${data.auditReport.substring(0, 100)}...` : '❌ Empty')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('✅ [Frontend] Audit result:', data)
       
       // Store all 6 output columns from JamAI Base
-      const reportCard = data.Final_report_card || data.auditReport || ''
-      
       setOutputResults({
-        Final_report_card: reportCard,
+        Final_report_card: data.Final_report_card || data.auditReport,
         Visual_Hygiene_Check: data.Visual_Hygiene_Check,
         Audit_checklist_status: data.Audit_checklist_status,
         Audit_menu_logic: data.Audit_menu_logic,
@@ -864,14 +583,9 @@ export default function PreAudit() {
         ProcessFlow_Validation: data.ProcessFlow_Validation
       })
       
-      console.log('📝 Setting fullReport to:', reportCard ? `${reportCard.substring(0, 100)}...` : 'Empty string')
-      
       // Store the full markdown report
-      if (reportCard) {
-        setFullReport(reportCard)
-      } else {
-        console.warn('⚠️ No report card data available!')
-        setFullReport('# No Report Available\n\nThe audit completed but no report was generated. Please check the server logs.')
+      if (data.Final_report_card || data.auditReport) {
+        setFullReport(data.Final_report_card || data.auditReport)
       }
       
       // Transform API response to match frontend format
@@ -1105,26 +819,14 @@ export default function PreAudit() {
                       <div className="relative w-32 h-32 mx-auto mb-6">
                         <RefreshCw className="w-32 h-32 text-[#C5E86C] animate-spin" />
                       </div>
-                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-4">
+                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-2">
                         {text.analyzing}
                       </h3>
-                      <div className="space-y-2 text-center max-w-md">
-                        <p className="text-gray-600 font-medium">
-                          {language === 'bm' 
-                            ? '📤 Menghantar fail ke JamAI Base...' 
-                            : '📤 Uploading files to JamAI Base...'}
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                          {language === 'bm' 
-                            ? '🤖 AI sedang menganalisis dokumen anda' 
-                            : '🤖 AI is analyzing your documents'}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {language === 'bm' 
-                            ? '⏳ Ini mungkin mengambil masa 10-60 saat untuk menghasilkan laporan lengkap' 
-                            : '⏳ This may take 10-60 seconds to generate the complete report'}
-                        </p>
-                      </div>
+                      <p className="text-gray-600">
+                        {language === 'bm' 
+                          ? 'Menganalisis dokumen anda...' 
+                          : 'Analyzing your documents...'}
+                      </p>
                     </div>
                   ) : getTotalUploaded() > 0 && selectedFile ? (
                     /* File Preview State */
@@ -1253,33 +955,18 @@ export default function PreAudit() {
 
                       <button
                         onClick={startAudit}
-                        disabled={getTotalUploaded() < 3 || isAuditing}
+                        disabled={getTotalUploaded() < 3}
                         className="px-10 py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center gap-3"
                       >
-                        {isAuditing ? (
-                          <>
-                            <RefreshCw className="w-6 h-6 text-[#C5E86C] animate-spin" />
-                            {language === 'bm' ? 'Menghantar...' : 'Sending...'}
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-6 h-6 text-[#C5E86C]" />
-                            {text.startAudit}
-                          </>
-                        )}
+                        <Sparkles className="w-6 h-6 text-[#C5E86C]" />
+                        {text.startAudit}
                       </button>
                       
-                      {getTotalUploaded() < 3 && !isAuditing && (
+                      {getTotalUploaded() < 3 && (
                         <p className="text-sm text-gray-500 mt-4">
                           {language === 'bm' 
                             ? `Muat naik sekurang-kurangnya 3 dokumen`
                             : 'Upload at least 3 documents'}
-                        </p>
-                      )}
-                      
-                      {isAuditing && (
-                        <p className="text-sm text-[#2D4A3E] mt-4 font-medium">
-                          {language === 'bm' ? '🚀 Menghantar fail ke JamAI Base...' : '🚀 Uploading to JamAI Base...'}
                         </p>
                       )}
                     </div>
@@ -1460,13 +1147,13 @@ export default function PreAudit() {
                   <div className="bg-white p-6 rounded-lg shadow-sm">
                     <div id="markdown-report" className="prose prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {outputResults.Final_report_card || fullReport || (language === 'bm' ? 'Tiada laporan' : 'No report available')}
+                        {outputResults.Final_report_card || fullReport || language === 'bm' ? 'Tiada laporan' : 'No report available'}
                       </ReactMarkdown>
                     </div>
                   </div>
                 </div>
 
-                {/* 2. Visual Hygiene Check (Formatted Report) */}
+                {/* 2. Visual Hygiene Check (JSON) */}
                 {outputResults.Visual_Hygiene_Check && (
                   <div id="tab-hygiene" className="scroll-mt-4">
                     <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
@@ -1474,16 +1161,14 @@ export default function PreAudit() {
                       {language === 'bm' ? 'Semakan Kebersihan Visual' : 'Visual Hygiene Check'}
                     </h3>
                     <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <div className="prose prose-sm max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {formatHygieneReport(outputResults.Visual_Hygiene_Check)}
-                        </ReactMarkdown>
-                      </div>
+                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(outputResults.Visual_Hygiene_Check, null, 2)}
+                      </pre>
                     </div>
                   </div>
                 )}
 
-                {/* 3. Audit Checklist Status (Formatted Report) */}
+                {/* 3. Audit Checklist Status (JSON) */}
                 {outputResults.Audit_checklist_status && (
                   <div id="tab-checklist" className="scroll-mt-4">
                     <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
@@ -1491,16 +1176,14 @@ export default function PreAudit() {
                       {language === 'bm' ? 'Status Senarai Semak' : 'Audit Checklist Status'}
                     </h3>
                     <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <div className="prose prose-sm max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {formatChecklistReport(outputResults.Audit_checklist_status)}
-                        </ReactMarkdown>
-                      </div>
+                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(outputResults.Audit_checklist_status, null, 2)}
+                      </pre>
                     </div>
                   </div>
                 )}
 
-                {/* 4. Audit Menu Logic (Formatted Report) */}
+                {/* 4. Audit Menu Logic (JSON) */}
                 {outputResults.Audit_menu_logic && (
                   <div id="tab-menu" className="scroll-mt-4">
                     <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
@@ -1508,16 +1191,14 @@ export default function PreAudit() {
                       {language === 'bm' ? 'Logik Audit Menu' : 'Audit Menu Logic'}
                     </h3>
                     <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <div className="prose prose-sm max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {formatMenuLogicReport(outputResults.Audit_menu_logic)}
-                        </ReactMarkdown>
-                      </div>
+                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(outputResults.Audit_menu_logic, null, 2)}
+                      </pre>
                     </div>
                   </div>
                 )}
 
-                {/* 5. Certification Validation (Formatted Report) */}
+                {/* 5. Certification Validation (JSON) */}
                 {outputResults.Certification_Validation && (
                   <div id="tab-certification" className="scroll-mt-4">
                     <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
@@ -1525,16 +1206,14 @@ export default function PreAudit() {
                       {language === 'bm' ? 'Pengesahan Sijil' : 'Certification Validation'}
                     </h3>
                     <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <div className="prose prose-sm max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {formatCertificationReport(outputResults.Certification_Validation)}
-                        </ReactMarkdown>
-                      </div>
+                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(outputResults.Certification_Validation, null, 2)}
+                      </pre>
                     </div>
                   </div>
                 )}
 
-                {/* 6. Process Flow Validation (Formatted Report) */}
+                {/* 6. Process Flow Validation (JSON) */}
                 {outputResults.ProcessFlow_Validation && (
                   <div id="tab-process" className="scroll-mt-4">
                     <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
@@ -1542,11 +1221,9 @@ export default function PreAudit() {
                       {language === 'bm' ? 'Pengesahan Aliran Proses' : 'Process Flow Validation'}
                     </h3>
                     <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <div className="prose prose-sm max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {formatProcessFlowReport(outputResults.ProcessFlow_Validation)}
-                        </ReactMarkdown>
-                      </div>
+                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
+                        {JSON.stringify(outputResults.ProcessFlow_Validation, null, 2)}
+                      </pre>
                     </div>
                   </div>
                 )}
