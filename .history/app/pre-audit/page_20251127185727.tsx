@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   ArrowLeft, 
@@ -275,9 +275,8 @@ export default function PreAudit() {
   const text = t[language]
 
   // Fetch document requirements from JamAI Base on mount
-  useEffect(() => {
+  React.useEffect(() => {
     fetchDocumentRequirements()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /**
@@ -520,7 +519,7 @@ export default function PreAudit() {
         doc_type: string
         status: CheckStatus
         message: string
-      }> = requiredDocs.map((doc: { type: DocumentType, label: string, icon: any, isSpecial: boolean }) => {
+      }> = REQUIRED_DOCS.map(doc => {
         if (uploaded.has(doc.type)) {
           return {
             doc_type: doc.label,
@@ -537,7 +536,7 @@ export default function PreAudit() {
       })
 
       const foundCount = checks.filter(c => c.status === 'found').length
-      const totalCount = requiredDocs.length
+      const totalCount = REQUIRED_DOCS.length
       const score = Math.round((foundCount / totalCount) * 100)
 
       const recommendations = checks
@@ -634,7 +633,7 @@ export default function PreAudit() {
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <h2 className="text-lg font-bold text-[#2D4A3E] mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-[#C5E86C]" />
-                {text.requiredDocs} ({getTotalUploaded()}/{requiredDocs.length})
+                {text.requiredDocs} ({getTotalUploaded()}/{REQUIRED_DOCS.length})
               </h2>
 
               {/* Company Info */}
@@ -818,7 +817,7 @@ export default function PreAudit() {
                             strokeWidth="16"
                             fill="none"
                             strokeDasharray={2 * Math.PI * 80}
-                            strokeDashoffset={2 * Math.PI * 80 * (1 - getTotalUploaded() / requiredDocs.length)}
+                            strokeDashoffset={2 * Math.PI * 80 * (1 - getTotalUploaded() / REQUIRED_DOCS.length)}
                             strokeLinecap="round"
                             className="transition-all duration-500"
                           />
@@ -828,7 +827,7 @@ export default function PreAudit() {
                             {getTotalUploaded()}
                           </div>
                           <div className="text-xl text-gray-500 font-semibold">
-                            / {requiredDocs.length}
+                            / {REQUIRED_DOCS.length}
                           </div>
                         </div>
                       </div>

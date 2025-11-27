@@ -275,9 +275,8 @@ export default function PreAudit() {
   const text = t[language]
 
   // Fetch document requirements from JamAI Base on mount
-  useEffect(() => {
+  React.useEffect(() => {
     fetchDocumentRequirements()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /**

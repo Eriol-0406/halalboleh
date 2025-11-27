@@ -32,15 +32,14 @@ export async function POST(request: NextRequest) {
     console.log('📋 [Pre-Audit API] Kitchen Photos:', kitchenPhotos.map(f => f.name).join(', '))
     console.log('📋 [Pre-Audit API] Other Files:', otherFilenames)
 
-    // Get credentials from environment variables (Pre-Audit specific)
-    const projectId = process.env.NEXT_PUBLIC_PRE_AUDIT_PROJECT_ID
-    const apiKey = process.env.PRE_AUDIT_API_KEY
+    // Get credentials from environment variables
+    const projectId = process.env.NEXT_PUBLIC_JAMAI_PROJECT_ID
+    const apiKey = process.env.JAMAI_API_KEY
 
     if (!projectId || !apiKey) {
-      console.error('❌ Missing Pre-Audit JamAI credentials')
-      console.error('Required: NEXT_PUBLIC_PRE_AUDIT_PROJECT_ID and PRE_AUDIT_API_KEY')
+      console.error('❌ Missing JamAI credentials')
       return NextResponse.json(
-        { error: 'Server configuration error: Missing Pre-Audit JamAI credentials' },
+        { error: 'Server configuration error: Missing JamAI credentials' },
         { status: 500 }
       )
     }

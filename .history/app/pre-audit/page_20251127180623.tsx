@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   ArrowLeft, 
@@ -183,15 +183,6 @@ export default function PreAudit() {
   const [companyName, setCompanyName] = useState('')
   const [businessType, setBusinessType] = useState('')
   const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null)
-  
-  // Dynamic document requirements from JamAI Base
-  const [requiredDocs, setRequiredDocs] = useState<Array<{
-    type: DocumentType
-    label: string
-    icon: any
-    isSpecial: boolean
-  }>>([])
-  const [isLoadingRequirements, setIsLoadingRequirements] = useState(true)
 
   const t = {
     en: {
@@ -274,70 +265,15 @@ export default function PreAudit() {
 
   const text = t[language]
 
-  // Fetch document requirements from JamAI Base on mount
-  useEffect(() => {
-    fetchDocumentRequirements()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  /**
-   * Fetch document requirements from JamAI Base Knowledge Table
-   * This allows requirements to be managed dynamically in JamAI Base
-   */
-  const fetchDocumentRequirements = async () => {
-    setIsLoadingRequirements(true)
-    
-    try {
-      // Default fallback requirements (used if API fails)
-      const defaultRequirements = [
-        { type: 'menu_list' as DocumentType, label: text.menuList, icon: FileText, isSpecial: true },
-        { type: 'ingredient_list' as DocumentType, label: text.ingredientList, icon: FileText, isSpecial: true },
-        { type: 'flow_chart' as DocumentType, label: text.flowChart, icon: TrendingUp, isSpecial: false },
-        { type: 'training_cert' as DocumentType, label: text.trainingCert, icon: FileText, isSpecial: false },
-        { type: 'halal_policy' as DocumentType, label: text.halalPolicy, icon: FileText, isSpecial: false },
-        { type: 'pest_control' as DocumentType, label: text.pestControl, icon: FileText, isSpecial: false },
-        { type: 'photos' as DocumentType, label: text.photos, icon: ImageIcon, isSpecial: true }
-      ]
-
-      // Attempt to fetch from JamAI Base (optional enhancement)
-      // If you have a Knowledge Table with document requirements, uncomment:
-      /*
-      const response = await fetch('/api/pre-audit/requirements', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.requirements && Array.isArray(data.requirements)) {
-          setRequiredDocs(data.requirements)
-          setIsLoadingRequirements(false)
-          return
-        }
-      }
-      */
-
-      // Use default requirements
-      setRequiredDocs(defaultRequirements)
-      
-    } catch (error) {
-      console.error('Failed to fetch document requirements:', error)
-      // Fallback to default
-      setRequiredDocs([
-        { type: 'menu_list' as DocumentType, label: text.menuList, icon: FileText, isSpecial: true },
-        { type: 'ingredient_list' as DocumentType, label: text.ingredientList, icon: FileText, isSpecial: true },
-        { type: 'flow_chart' as DocumentType, label: text.flowChart, icon: TrendingUp, isSpecial: false },
-        { type: 'training_cert' as DocumentType, label: text.trainingCert, icon: FileText, isSpecial: false },
-        { type: 'halal_policy' as DocumentType, label: text.halalPolicy, icon: FileText, isSpecial: false },
-        { type: 'pest_control' as DocumentType, label: text.pestControl, icon: FileText, isSpecial: false },
-        { type: 'photos' as DocumentType, label: text.photos, icon: ImageIcon, isSpecial: true }
-      ])
-    } finally {
-      setIsLoadingRequirements(false)
-    }
-  }
+  const REQUIRED_DOCS = [
+    { type: 'menu_list' as DocumentType, label: text.menuList, icon: FileText, isSpecial: true },
+    { type: 'ingredient_list' as DocumentType, label: text.ingredientList, icon: FileText, isSpecial: true },
+    { type: 'flow_chart' as DocumentType, label: text.flowChart, icon: TrendingUp, isSpecial: false },
+    { type: 'training_cert' as DocumentType, label: text.trainingCert, icon: FileText, isSpecial: false },
+    { type: 'halal_policy' as DocumentType, label: text.halalPolicy, icon: FileText, isSpecial: false },
+    { type: 'pest_control' as DocumentType, label: text.pestControl, icon: FileText, isSpecial: false },
+    { type: 'photos' as DocumentType, label: text.photos, icon: ImageIcon, isSpecial: true }
+  ]
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -520,7 +456,7 @@ export default function PreAudit() {
         doc_type: string
         status: CheckStatus
         message: string
-      }> = requiredDocs.map((doc: { type: DocumentType, label: string, icon: any, isSpecial: boolean }) => {
+      }> = REQUIRED_DOCS.map(doc => {
         if (uploaded.has(doc.type)) {
           return {
             doc_type: doc.label,
@@ -537,7 +473,7 @@ export default function PreAudit() {
       })
 
       const foundCount = checks.filter(c => c.status === 'found').length
-      const totalCount = requiredDocs.length
+      const totalCount = REQUIRED_DOCS.length
       const score = Math.round((foundCount / totalCount) * 100)
 
       const recommendations = checks
@@ -634,7 +570,7 @@ export default function PreAudit() {
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
               <h2 className="text-lg font-bold text-[#2D4A3E] mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-[#C5E86C]" />
-                {text.requiredDocs} ({getTotalUploaded()}/{requiredDocs.length})
+                {text.requiredDocs} ({getTotalUploaded()}/{REQUIRED_DOCS.length})
               </h2>
 
               {/* Company Info */}
@@ -657,13 +593,7 @@ export default function PreAudit() {
 
               {/* Smart Upload List */}
               <div className="space-y-2">
-                {isLoadingRequirements ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
-                    {language === 'bm' ? 'Memuatkan keperluan...' : 'Loading requirements...'}
-                  </div>
-                ) : (
-                  requiredDocs.map((doc) => {
+                {REQUIRED_DOCS.map((doc) => {
                   const file = getFileForType(doc.type)
                   const hasFile = doc.type === 'photos' 
                     ? (file as UploadedFile[])?.length > 0 
@@ -709,8 +639,7 @@ export default function PreAudit() {
                       onRemove={() => removeSpecificFile(doc.type)}
                     />
                   )
-                  })
-                )}
+                })}
               </div>
 
             </div>
@@ -818,7 +747,7 @@ export default function PreAudit() {
                             strokeWidth="16"
                             fill="none"
                             strokeDasharray={2 * Math.PI * 80}
-                            strokeDashoffset={2 * Math.PI * 80 * (1 - getTotalUploaded() / requiredDocs.length)}
+                            strokeDashoffset={2 * Math.PI * 80 * (1 - getTotalUploaded() / REQUIRED_DOCS.length)}
                             strokeLinecap="round"
                             className="transition-all duration-500"
                           />
@@ -828,7 +757,7 @@ export default function PreAudit() {
                             {getTotalUploaded()}
                           </div>
                           <div className="text-xl text-gray-500 font-semibold">
-                            / {requiredDocs.length}
+                            / {REQUIRED_DOCS.length}
                           </div>
                         </div>
                       </div>
