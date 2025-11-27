@@ -1191,7 +1191,7 @@ export default function PreAudit() {
                   <div className="bg-white p-6 rounded-lg shadow-sm">
                     <div id="markdown-report" className="prose prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {outputResults.Final_report_card || fullReport || (language === 'bm' ? 'Tiada laporan' : 'No report available')}
+                        {outputResults.Final_report_card || fullReport || language === 'bm' ? 'Tiada laporan' : 'No report available'}
                       </ReactMarkdown>
                     </div>
                   </div>

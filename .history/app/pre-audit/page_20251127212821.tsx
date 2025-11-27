@@ -571,23 +571,11 @@ export default function PreAudit() {
       }
 
       const data = await response.json()
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('✅ [Frontend] API Response Received:')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('Final_report_card:', data.Final_report_card ? `✅ ${data.Final_report_card.substring(0, 100)}...` : '❌ Empty/Null')
-      console.log('Visual_Hygiene_Check:', data.Visual_Hygiene_Check ? '✅ Present' : '❌ Empty')
-      console.log('Audit_checklist_status:', data.Audit_checklist_status ? '✅ Present' : '❌ Empty')
-      console.log('Audit_menu_logic:', data.Audit_menu_logic ? '✅ Present' : '❌ Empty')
-      console.log('Certification_Validation:', data.Certification_Validation ? '✅ Present' : '❌ Empty')
-      console.log('ProcessFlow_Validation:', data.ProcessFlow_Validation ? '✅ Present' : '❌ Empty')
-      console.log('Legacy auditReport:', data.auditReport ? `✅ ${data.auditReport.substring(0, 100)}...` : '❌ Empty')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('✅ [Frontend] Audit result:', data)
       
       // Store all 6 output columns from JamAI Base
-      const reportCard = data.Final_report_card || data.auditReport || ''
-      
       setOutputResults({
-        Final_report_card: reportCard,
+        Final_report_card: data.Final_report_card || data.auditReport,
         Visual_Hygiene_Check: data.Visual_Hygiene_Check,
         Audit_checklist_status: data.Audit_checklist_status,
         Audit_menu_logic: data.Audit_menu_logic,
@@ -595,14 +583,9 @@ export default function PreAudit() {
         ProcessFlow_Validation: data.ProcessFlow_Validation
       })
       
-      console.log('📝 Setting fullReport to:', reportCard ? `${reportCard.substring(0, 100)}...` : 'Empty string')
-      
       // Store the full markdown report
-      if (reportCard) {
-        setFullReport(reportCard)
-      } else {
-        console.warn('⚠️ No report card data available!')
-        setFullReport('# No Report Available\n\nThe audit completed but no report was generated. Please check the server logs.')
+      if (data.Final_report_card || data.auditReport) {
+        setFullReport(data.Final_report_card || data.auditReport)
       }
       
       // Transform API response to match frontend format
@@ -836,26 +819,14 @@ export default function PreAudit() {
                       <div className="relative w-32 h-32 mx-auto mb-6">
                         <RefreshCw className="w-32 h-32 text-[#C5E86C] animate-spin" />
                       </div>
-                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-4">
+                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-2">
                         {text.analyzing}
                       </h3>
-                      <div className="space-y-2 text-center max-w-md">
-                        <p className="text-gray-600 font-medium">
-                          {language === 'bm' 
-                            ? '📤 Menghantar fail ke JamAI Base...' 
-                            : '📤 Uploading files to JamAI Base...'}
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                          {language === 'bm' 
-                            ? '🤖 AI sedang menganalisis dokumen anda' 
-                            : '🤖 AI is analyzing your documents'}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {language === 'bm' 
-                            ? '⏳ Ini mungkin mengambil masa 10-60 saat untuk menghasilkan laporan lengkap' 
-                            : '⏳ This may take 10-60 seconds to generate the complete report'}
-                        </p>
-                      </div>
+                      <p className="text-gray-600">
+                        {language === 'bm' 
+                          ? 'Menganalisis dokumen anda...' 
+                          : 'Analyzing your documents...'}
+                      </p>
                     </div>
                   ) : getTotalUploaded() > 0 && selectedFile ? (
                     /* File Preview State */
@@ -1191,7 +1162,7 @@ export default function PreAudit() {
                   <div className="bg-white p-6 rounded-lg shadow-sm">
                     <div id="markdown-report" className="prose prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {outputResults.Final_report_card || fullReport || (language === 'bm' ? 'Tiada laporan' : 'No report available')}
+                        {outputResults.Final_report_card || fullReport || language === 'bm' ? 'Tiada laporan' : 'No report available'}
                       </ReactMarkdown>
                     </div>
                   </div>

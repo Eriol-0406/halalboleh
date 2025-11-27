@@ -102,105 +102,31 @@ export async function submitPreAuditRow(
       Kitchen_Photo: data.kitchenPhotoUri,
     }
 
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🔍 [DEBUG] JamAI Base API Call:')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('Table: Pre_Audit_System (action)')
-    console.log('Payload:', JSON.stringify(payload, null, 2))
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📤 Submitting to Action Table Pre_Audit_System:', payload)
 
-    const addResult = await jamai.table.addRow({
+    const result = await jamai.table.addRow({
       table_type: 'action',
       table_id: 'Pre_Audit_System',
       data: [payload],
       reindex: false,
     })
 
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('✅ Row Added to JamAI Base')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    
-    if (!addResult.rows || addResult.rows.length === 0) {
+    console.log('✅ Action Table response:', result)
+
+    // Extract the generated columns from the response
+    if (!result.rows || result.rows.length === 0) {
       throw new Error('No response rows returned from JamAI')
     }
 
-    const rowId = addResult.rows[0].row_id
-    console.log('Row ID:', rowId)
-    console.log('⏳ Waiting for LLM outputs to be generated...')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-
-    // Poll for outputs to be generated (LLMs take time to process)
-    let result: any = null
-    let attempts = 0
-    const maxAttempts = 30 // 30 attempts = ~60 seconds max wait
-    
-    while (attempts < maxAttempts) {
-      attempts++
-      console.log(`🔄 Polling attempt ${attempts}/${maxAttempts}...`)
-      
-      // Fetch the row to check if outputs are ready
-      const getResult = await jamai.table.getRow({
-        table_type: 'action',
-        table_id: 'Pre_Audit_System',
-        row_id: rowId
-      })
-      
-      if (getResult && getResult.columns) {
-        // Check if Final_report_card has content (main output indicator)
-        const finalReportColumn = getResult.columns.Final_report_card
-        
-        if (finalReportColumn && finalReportColumn.choices && finalReportColumn.choices.length > 0) {
-          const content = finalReportColumn.choices[0].message?.content
-          if (content && content.length > 10) {
-            console.log('✅ Outputs are ready!')
-            result = getResult
-            break
-          }
-        }
-      }
-      
-      // Wait 2 seconds before next poll
-      if (attempts < maxAttempts) {
-        console.log('⏳ Outputs not ready yet, waiting 2 seconds...')
-        await new Promise(resolve => setTimeout(resolve, 2000))
-      }
-    }
-    
-    if (!result) {
-      console.warn('⚠️ Timeout waiting for outputs, returning partial results')
-      result = addResult.rows[0]
-    }
-
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📊 Final Result with Outputs:')
-    console.log(JSON.stringify(result, null, 2))
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-
-    const columns = result.columns
-    
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🔍 [DEBUG] Available Column Names:')
-    console.log(Object.keys(columns))
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    const columns = result.rows[0].columns
     
     // Helper function to extract text from chat completion
     const extractText = (column: any): string => {
-      if (!column) {
-        console.log('⚠️ Column is null/undefined')
-        return ''
-      }
-      if (!column.choices) {
-        console.log('⚠️ Column has no choices property')
-        return ''
-      }
-      if (column.choices.length === 0) {
-        console.log('⚠️ Column choices array is empty')
+      if (!column || !column.choices || column.choices.length === 0) {
         return ''
       }
       const content = column.choices[0].message?.content
-      const result = typeof content === 'string' ? content : ''
-      console.log(`📝 Extracted text length: ${result.length} characters`)
-      return result
+      return typeof content === 'string' ? content : ''
     }
     
     // Helper function to parse JSON output columns
@@ -214,18 +140,10 @@ export async function submitPreAuditRow(
       }
     }
     
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🔍 [DEBUG] Extracting Final_report_card:')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    const finalReportCard = extractText(columns.Final_report_card)
-    console.log('Final_report_card length:', finalReportCard.length)
-    console.log('Final_report_card preview:', finalReportCard.substring(0, 200))
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    
     // Return all 6 output columns
     return {
       rowId: data.id,
-      Final_report_card: finalReportCard,
+      Final_report_card: extractText(columns.Final_report_card),
       Visual_Hygiene_Check: parseJSON(columns.Visual_Hygiene_Check),
       Audit_checklist_status: parseJSON(columns.Audit_checklist_status),
       Audit_menu_logic: parseJSON(columns.Audit_menu_logic),

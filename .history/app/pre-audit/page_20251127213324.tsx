@@ -836,26 +836,14 @@ export default function PreAudit() {
                       <div className="relative w-32 h-32 mx-auto mb-6">
                         <RefreshCw className="w-32 h-32 text-[#C5E86C] animate-spin" />
                       </div>
-                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-4">
+                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-2">
                         {text.analyzing}
                       </h3>
-                      <div className="space-y-2 text-center max-w-md">
-                        <p className="text-gray-600 font-medium">
-                          {language === 'bm' 
-                            ? '📤 Menghantar fail ke JamAI Base...' 
-                            : '📤 Uploading files to JamAI Base...'}
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                          {language === 'bm' 
-                            ? '🤖 AI sedang menganalisis dokumen anda' 
-                            : '🤖 AI is analyzing your documents'}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {language === 'bm' 
-                            ? '⏳ Ini mungkin mengambil masa 10-60 saat untuk menghasilkan laporan lengkap' 
-                            : '⏳ This may take 10-60 seconds to generate the complete report'}
-                        </p>
-                      </div>
+                      <p className="text-gray-600">
+                        {language === 'bm' 
+                          ? 'Menganalisis dokumen anda...' 
+                          : 'Analyzing your documents...'}
+                      </p>
                     </div>
                   ) : getTotalUploaded() > 0 && selectedFile ? (
                     /* File Preview State */
@@ -1191,7 +1179,7 @@ export default function PreAudit() {
                   <div className="bg-white p-6 rounded-lg shadow-sm">
                     <div id="markdown-report" className="prose prose-sm max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {outputResults.Final_report_card || fullReport || (language === 'bm' ? 'Tiada laporan' : 'No report available')}
+                        {outputResults.Final_report_card || fullReport || language === 'bm' ? 'Tiada laporan' : 'No report available'}
                       </ReactMarkdown>
                     </div>
                   </div>

@@ -453,21 +453,7 @@ export default function PreAudit() {
   }
 
   const getUploadedDocTypes = () => {
-    const types = new Set<DocumentType>()
-    
-    // Check all 7 special file states
-    if (menuFile) types.add('menu_list')
-    if (ingredientFile) types.add('ingredient_list')
-    if (chartFlowFile) types.add('flow_chart')
-    if (trainingCertFile) types.add('training_cert')
-    if (halalPolicyFile) types.add('halal_policy')
-    if (pestControlFile) types.add('pest_control')
-    if (kitchenPhotos.length > 0) types.add('photos')
-    
-    // Also include any files in uploadedFiles array (legacy)
-    uploadedFiles.forEach(f => types.add(f.type))
-    
-    return types
+    return new Set(uploadedFiles.map(f => f.type))
   }
 
   const getFileForType = (type: DocumentType): UploadedFile | UploadedFile[] | null => {
@@ -486,11 +472,8 @@ export default function PreAudit() {
     let count = 0
     if (menuFile) count++
     if (ingredientFile) count++
-    if (chartFlowFile) count++
-    if (trainingCertFile) count++
-    if (halalPolicyFile) count++
-    if (pestControlFile) count++
     if (kitchenPhotos.length > 0) count++
+    count += getUploadedDocTypes().size
     return count
   }
 
@@ -498,66 +481,39 @@ export default function PreAudit() {
     setIsAuditing(true)
     
     try {
-      // Prepare FormData with all 7 input files matching JamAI Base table
+      // Prepare FormData for file upload + metadata
       const formData = new FormData()
       
       // Add metadata
       formData.append('companyName', companyName || 'Company')
       formData.append('businessType', businessType || 'Restaurant')
       
-      // Add all 7 input files with exact column names from JamAI Base
+      // Add file objects (not just names)
       if (menuFile?.file) {
-        formData.append('Menu_File', menuFile.file)
-        console.log('📋 [Frontend] Adding Menu_File:', menuFile.name)
+        formData.append('menuFile', menuFile.file)
+        console.log('📋 [Frontend] Adding Menu File:', menuFile.name)
       }
       
       if (ingredientFile?.file) {
-        formData.append('Ingredient_File', ingredientFile.file)
-        console.log('📋 [Frontend] Adding Ingredient_File:', ingredientFile.name)
+        formData.append('ingredientFile', ingredientFile.file)
+        console.log('📋 [Frontend] Adding Ingredient File:', ingredientFile.name)
       }
       
-      if (chartFlowFile?.file) {
-        formData.append('ChartFlow', chartFlowFile.file)
-        console.log('📋 [Frontend] Adding ChartFlow:', chartFlowFile.name)
-      }
-      
-      if (trainingCertFile?.file) {
-        formData.append('Training_cert', trainingCertFile.file)
-        console.log('📋 [Frontend] Adding Training_cert:', trainingCertFile.name)
-      }
-      
-      if (halalPolicyFile?.file) {
-        formData.append('Halal_policy_poster', halalPolicyFile.file)
-        console.log('📋 [Frontend] Adding Halal_policy_poster:', halalPolicyFile.name)
-      }
-      
-      if (pestControlFile?.file) {
-        formData.append('Pest_Control_Contract', pestControlFile.file)
-        console.log('📋 [Frontend] Adding Pest_Control_Contract:', pestControlFile.name)
-      }
-      
+      // Add kitchen photos
       if (kitchenPhotos.length > 0) {
         kitchenPhotos.forEach(photo => {
           if (photo.file) {
-            formData.append('Kitchen_Photo', photo.file)
-            console.log('📋 [Frontend] Adding Kitchen_Photo:', photo.name)
+            formData.append('kitchenPhotos', photo.file)
+            console.log('📋 [Frontend] Adding Kitchen Photo:', photo.name)
           }
         })
       }
       
-      // 🔍 DEBUG: Log exactly what files are being sent
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('🔍 [DEBUG] Pre-Audit Submission Summary:')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('Menu_File:', menuFile ? `✅ ${menuFile.name} (${menuFile.size} bytes)` : '❌ Missing')
-      console.log('Ingredient_File:', ingredientFile ? `✅ ${ingredientFile.name} (${ingredientFile.size} bytes)` : '❌ Missing')
-      console.log('ChartFlow:', chartFlowFile ? `✅ ${chartFlowFile.name} (${chartFlowFile.size} bytes)` : '❌ Missing')
-      console.log('Training_cert:', trainingCertFile ? `✅ ${trainingCertFile.name} (${trainingCertFile.size} bytes)` : '❌ Missing')
-      console.log('Halal_policy_poster:', halalPolicyFile ? `✅ ${halalPolicyFile.name} (${halalPolicyFile.size} bytes)` : '❌ Missing')
-      console.log('Pest_Control_Contract:', pestControlFile ? `✅ ${pestControlFile.name} (${pestControlFile.size} bytes)` : '❌ Missing')
-      console.log('Kitchen_Photo:', kitchenPhotos.length > 0 ? `✅ ${kitchenPhotos.length} photos` : '❌ Missing')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('📤 [Frontend] Submitting to /api/pre-audit...')
+      // Add other filenames (not uploaded as files, just tracked)
+      const otherFilenames = uploadedFiles.map(f => f.name).join(', ')
+      formData.append('otherFilenames', otherFilenames)
+      
+      console.log('📋 [Frontend] Submitting Pre-Audit to API...')
       
       const response = await fetch('/api/pre-audit', {
         method: 'POST',
@@ -571,43 +527,16 @@ export default function PreAudit() {
       }
 
       const data = await response.json()
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('✅ [Frontend] API Response Received:')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.log('Final_report_card:', data.Final_report_card ? `✅ ${data.Final_report_card.substring(0, 100)}...` : '❌ Empty/Null')
-      console.log('Visual_Hygiene_Check:', data.Visual_Hygiene_Check ? '✅ Present' : '❌ Empty')
-      console.log('Audit_checklist_status:', data.Audit_checklist_status ? '✅ Present' : '❌ Empty')
-      console.log('Audit_menu_logic:', data.Audit_menu_logic ? '✅ Present' : '❌ Empty')
-      console.log('Certification_Validation:', data.Certification_Validation ? '✅ Present' : '❌ Empty')
-      console.log('ProcessFlow_Validation:', data.ProcessFlow_Validation ? '✅ Present' : '❌ Empty')
-      console.log('Legacy auditReport:', data.auditReport ? `✅ ${data.auditReport.substring(0, 100)}...` : '❌ Empty')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      
-      // Store all 6 output columns from JamAI Base
-      const reportCard = data.Final_report_card || data.auditReport || ''
-      
-      setOutputResults({
-        Final_report_card: reportCard,
-        Visual_Hygiene_Check: data.Visual_Hygiene_Check,
-        Audit_checklist_status: data.Audit_checklist_status,
-        Audit_menu_logic: data.Audit_menu_logic,
-        Certification_Validation: data.Certification_Validation,
-        ProcessFlow_Validation: data.ProcessFlow_Validation
-      })
-      
-      console.log('📝 Setting fullReport to:', reportCard ? `${reportCard.substring(0, 100)}...` : 'Empty string')
+      console.log('✅ [Frontend] Audit result:', data)
       
       // Store the full markdown report
-      if (reportCard) {
-        setFullReport(reportCard)
-      } else {
-        console.warn('⚠️ No report card data available!')
-        setFullReport('# No Report Available\n\nThe audit completed but no report was generated. Please check the server logs.')
+      if (data.auditReport) {
+        setFullReport(data.auditReport)
       }
       
       // Transform API response to match frontend format
       const auditResult: AuditResult = {
-        overall_score: data.score || 0,
+        overall_score: data.score,
         checks: data.checks || [],
         recommendations: data.recommendations || []
       }
@@ -615,7 +544,7 @@ export default function PreAudit() {
       setAuditResult(auditResult)
       
       // Show the modal if report is available
-      if (data.Final_report_card || data.auditReport) {
+      if (data.auditReport) {
         setShowReportModal(true)
       }
       
@@ -836,26 +765,14 @@ export default function PreAudit() {
                       <div className="relative w-32 h-32 mx-auto mb-6">
                         <RefreshCw className="w-32 h-32 text-[#C5E86C] animate-spin" />
                       </div>
-                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-4">
+                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-2">
                         {text.analyzing}
                       </h3>
-                      <div className="space-y-2 text-center max-w-md">
-                        <p className="text-gray-600 font-medium">
-                          {language === 'bm' 
-                            ? '📤 Menghantar fail ke JamAI Base...' 
-                            : '📤 Uploading files to JamAI Base...'}
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                          {language === 'bm' 
-                            ? '🤖 AI sedang menganalisis dokumen anda' 
-                            : '🤖 AI is analyzing your documents'}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {language === 'bm' 
-                            ? '⏳ Ini mungkin mengambil masa 10-60 saat untuk menghasilkan laporan lengkap' 
-                            : '⏳ This may take 10-60 seconds to generate the complete report'}
-                        </p>
-                      </div>
+                      <p className="text-gray-600">
+                        {language === 'bm' 
+                          ? 'Menganalisis dokumen anda...' 
+                          : 'Analyzing your documents...'}
+                      </p>
                     </div>
                   ) : getTotalUploaded() > 0 && selectedFile ? (
                     /* File Preview State */
@@ -901,39 +818,19 @@ export default function PreAudit() {
                       <div className="mt-6 pt-6 border-t border-gray-200">
                         <button
                           onClick={startAudit}
-                          disabled={getTotalUploaded() < 3 || isAuditing}
+                          disabled={getTotalUploaded() < 3}
                           className="w-full py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-xl font-bold text-lg hover:scale-[1.02] hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center gap-3"
                         >
-                          {isAuditing ? (
-                            <>
-                              <RefreshCw className="w-6 h-6 text-[#C5E86C] animate-spin" />
-                              {language === 'bm' ? 'Menghantar ke JamAI Base...' : 'Sending to JamAI Base...'}
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-6 h-6 text-[#C5E86C]" />
-                              {text.startAudit}
-                            </>
-                          )}
+                          <Sparkles className="w-6 h-6 text-[#C5E86C]" />
+                          {text.startAudit}
                         </button>
                         
-                        {getTotalUploaded() < 3 && !isAuditing && (
+                        {getTotalUploaded() < 3 && (
                           <p className="text-sm text-gray-500 mt-3 text-center">
                             {language === 'bm' 
                               ? `Muat naik sekurang-kurangnya 3 dokumen`
                               : 'Upload at least 3 documents'}
                           </p>
-                        )}
-                        
-                        {isAuditing && (
-                          <div className="mt-3 space-y-2">
-                            <p className="text-sm text-[#2D4A3E] text-center font-medium">
-                              {language === 'bm' ? '🚀 Menghantar fail ke JamAI Base...' : '🚀 Uploading files to JamAI Base...'}
-                            </p>
-                            <p className="text-xs text-gray-500 text-center">
-                              {language === 'bm' ? 'Ini mungkin mengambil masa 10-30 saat' : 'This may take 10-30 seconds'}
-                            </p>
-                          </div>
                         )}
                       </div>
                     </div>
@@ -984,33 +881,18 @@ export default function PreAudit() {
 
                       <button
                         onClick={startAudit}
-                        disabled={getTotalUploaded() < 3 || isAuditing}
+                        disabled={getTotalUploaded() < 3}
                         className="px-10 py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center gap-3"
                       >
-                        {isAuditing ? (
-                          <>
-                            <RefreshCw className="w-6 h-6 text-[#C5E86C] animate-spin" />
-                            {language === 'bm' ? 'Menghantar...' : 'Sending...'}
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-6 h-6 text-[#C5E86C]" />
-                            {text.startAudit}
-                          </>
-                        )}
+                        <Sparkles className="w-6 h-6 text-[#C5E86C]" />
+                        {text.startAudit}
                       </button>
                       
-                      {getTotalUploaded() < 3 && !isAuditing && (
+                      {getTotalUploaded() < 3 && (
                         <p className="text-sm text-gray-500 mt-4">
                           {language === 'bm' 
                             ? `Muat naik sekurang-kurangnya 3 dokumen`
                             : 'Upload at least 3 documents'}
-                        </p>
-                      )}
-                      
-                      {isAuditing && (
-                        <p className="text-sm text-[#2D4A3E] mt-4 font-medium">
-                          {language === 'bm' ? '🚀 Menghantar fail ke JamAI Base...' : '🚀 Uploading to JamAI Base...'}
                         </p>
                       )}
                     </div>
@@ -1129,7 +1011,7 @@ export default function PreAudit() {
         {/* Results Modal */}
         {showReportModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
               {/* Modal Header */}
               <div className="bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] px-6 py-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -1153,124 +1035,64 @@ export default function PreAudit() {
                 </div>
               </div>
 
-              {/* Tabs for 6 Output Columns */}
-              <div className="border-b border-gray-200 bg-gray-50 px-6">
-                <div className="flex gap-2 overflow-x-auto">
-                  {[
-                    { key: 'report', label: language === 'bm' ? 'Laporan' : 'Report', icon: FileText },
-                    { key: 'hygiene', label: language === 'bm' ? 'Kebersihan' : 'Hygiene', icon: CheckCircle },
-                    { key: 'checklist', label: language === 'bm' ? 'Senarai Semak' : 'Checklist', icon: ClipboardCheck },
-                    { key: 'menu', label: language === 'bm' ? 'Menu' : 'Menu Logic', icon: FileText },
-                    { key: 'certification', label: language === 'bm' ? 'Sijil' : 'Certification', icon: CheckCircle },
-                    { key: 'process', label: language === 'bm' ? 'Proses' : 'Process Flow', icon: TrendingUp }
-                  ].map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => {
-                        const element = document.getElementById(`tab-${tab.key}`)
-                        element?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                      }}
-                      className="px-4 py-3 text-sm font-medium border-b-2 border-transparent hover:border-[#C5E86C] hover:text-[#2D4A3E] transition-all whitespace-nowrap flex items-center gap-2"
-                    >
-                      <tab.icon className="w-4 h-4" />
-                      {tab.label}
-                    </button>
-                  ))}
+              {/* Modal Body */}
+              <div className="p-8 overflow-y-auto max-h-[calc(90vh-80px)] bg-[#F9F7F2]">
+                <div id="markdown-report" className="prose prose-sm max-w-none">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      // Style PASS/FAIL keywords
+                      p: ({ children }) => {
+                        const text = String(children)
+                        if (text.includes('PASS') || text.includes('LULUS')) {
+                          return <p className="text-[#4A7A57] font-bold">{children}</p>
+                        }
+                        if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
+                          return <p className="text-[#D32F2F] font-bold">{children}</p>
+                        }
+                        return <p className="text-[#2D4A3E]">{children}</p>
+                      },
+                      h1: ({ children }) => (
+                        <h1 className="text-3xl font-bold text-[#2D4A3E] mb-4">{children}</h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className="text-2xl font-bold text-[#2D4A3E] mt-6 mb-3">{children}</h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className="text-xl font-semibold text-[#556B56] mt-4 mb-2">{children}</h3>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="list-disc list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="list-decimal list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ol>
+                      ),
+                      strong: ({ children }) => {
+                        const text = String(children)
+                        if (text.includes('PASS') || text.includes('LULUS')) {
+                          return <strong className="text-[#4A7A57]">{children}</strong>
+                        }
+                        if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
+                          return <strong className="text-[#D32F2F]">{children}</strong>
+                        }
+                        return <strong className="text-[#2D4A3E]">{children}</strong>
+                      },
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-4">
+                          <table className="min-w-full border-collapse border border-gray-300">{children}</table>
+                        </div>
+                      ),
+                      th: ({ children }) => (
+                        <th className="border border-gray-300 bg-[#2D4A3E] text-white px-4 py-2 text-left">{children}</th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="border border-gray-300 px-4 py-2 text-[#2D4A3E]">{children}</td>
+                      ),
+                    }}
+                  >
+                    {fullReport}
+                  </ReactMarkdown>
                 </div>
-              </div>
-
-              {/* Modal Body with All 6 Output Columns */}
-              <div className="p-8 overflow-y-auto max-h-[calc(90vh-160px)] bg-[#F9F7F2] space-y-6">
-                
-                {/* 1. Final Report Card (Markdown) */}
-                <div id="tab-report" className="scroll-mt-4">
-                  <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-[#C5E86C]" />
-                    {language === 'bm' ? 'Laporan Akhir' : 'Final Report Card'}
-                  </h3>
-                  <div className="bg-white p-6 rounded-lg shadow-sm">
-                    <div id="markdown-report" className="prose prose-sm max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {outputResults.Final_report_card || fullReport || (language === 'bm' ? 'Tiada laporan' : 'No report available')}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. Visual Hygiene Check (JSON) */}
-                {outputResults.Visual_Hygiene_Check && (
-                  <div id="tab-hygiene" className="scroll-mt-4">
-                    <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-[#C5E86C]" />
-                      {language === 'bm' ? 'Semakan Kebersihan Visual' : 'Visual Hygiene Check'}
-                    </h3>
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
-                        {JSON.stringify(outputResults.Visual_Hygiene_Check, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. Audit Checklist Status (JSON) */}
-                {outputResults.Audit_checklist_status && (
-                  <div id="tab-checklist" className="scroll-mt-4">
-                    <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
-                      <ClipboardCheck className="w-5 h-5 text-[#C5E86C]" />
-                      {language === 'bm' ? 'Status Senarai Semak' : 'Audit Checklist Status'}
-                    </h3>
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
-                        {JSON.stringify(outputResults.Audit_checklist_status, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. Audit Menu Logic (JSON) */}
-                {outputResults.Audit_menu_logic && (
-                  <div id="tab-menu" className="scroll-mt-4">
-                    <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
-                      <FileText className="w-5 h-5 text-[#C5E86C]" />
-                      {language === 'bm' ? 'Logik Audit Menu' : 'Audit Menu Logic'}
-                    </h3>
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
-                        {JSON.stringify(outputResults.Audit_menu_logic, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {/* 5. Certification Validation (JSON) */}
-                {outputResults.Certification_Validation && (
-                  <div id="tab-certification" className="scroll-mt-4">
-                    <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-[#C5E86C]" />
-                      {language === 'bm' ? 'Pengesahan Sijil' : 'Certification Validation'}
-                    </h3>
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
-                        {JSON.stringify(outputResults.Certification_Validation, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {/* 6. Process Flow Validation (JSON) */}
-                {outputResults.ProcessFlow_Validation && (
-                  <div id="tab-process" className="scroll-mt-4">
-                    <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-[#C5E86C]" />
-                      {language === 'bm' ? 'Pengesahan Aliran Proses' : 'Process Flow Validation'}
-                    </h3>
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                      <pre className="text-xs text-[#2D4A3E] overflow-x-auto whitespace-pre-wrap">
-                        {JSON.stringify(outputResults.ProcessFlow_Validation, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>

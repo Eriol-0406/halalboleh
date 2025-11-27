@@ -103,18 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step B: Submit row to Action Table Pre_Audit_System
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🔍 [DEBUG] File URIs Before Submission:')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('Menu_File:', menuFileUri || '❌ EMPTY')
-    console.log('Ingredient_File:', ingredientFileUri || '❌ EMPTY')
-    console.log('ChartFlow:', chartFlowUri || '❌ EMPTY')
-    console.log('Training_cert:', trainingCertUri || '❌ EMPTY')
-    console.log('Halal_policy_poster:', halalPolicyUri || '❌ EMPTY')
-    console.log('Pest_Control_Contract:', pestControlUri || '❌ EMPTY')
-    console.log('Kitchen_Photo:', kitchenPhotoUri || '❌ EMPTY')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📊 [Pre-Audit API] Submitting to Action Table Pre_Audit_System...')
+    console.log('📊 [Pre-Audit API] Submitting to Action Table...')
     
     const rowId = `${companyName} - ${businessType} - ${Date.now()}`
     
@@ -132,36 +121,20 @@ export async function POST(request: NextRequest) {
       apiKey
     )
 
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('✅ [Pre-Audit API] JamAI Base Response:')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('Row ID:', result.rowId)
-    console.log('Final_report_card:', result.Final_report_card ? `✅ ${result.Final_report_card.substring(0, 100)}...` : '❌ Empty')
-    console.log('Visual_Hygiene_Check:', result.Visual_Hygiene_Check ? '✅ Present' : '❌ Empty')
-    console.log('Audit_checklist_status:', result.Audit_checklist_status ? '✅ Present' : '❌ Empty')
-    console.log('Audit_menu_logic:', result.Audit_menu_logic ? '✅ Present' : '❌ Empty')
-    console.log('Certification_Validation:', result.Certification_Validation ? '✅ Present' : '❌ Empty')
-    console.log('ProcessFlow_Validation:', result.ProcessFlow_Validation ? '✅ Present' : '❌ Empty')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('✅ [Pre-Audit API] Success:', result)
 
-    // Return all 6 output columns from JamAI Base
+    // Parse the final report and extract score/checks if available
+    // The Action Table should return a Final_report_card column
+    const finalReport = result.finalReport || result.Final_report_card || ''
+
+    // Return structured response for frontend
     return NextResponse.json({
       success: true,
       rowId: result.rowId,
-      
-      // 6 Output columns from Pre_Audit_System table
-      Final_report_card: result.Final_report_card || '',
-      Visual_Hygiene_Check: result.Visual_Hygiene_Check || null,
-      Audit_checklist_status: result.Audit_checklist_status || null,
-      Audit_menu_logic: result.Audit_menu_logic || null,
-      Certification_Validation: result.Certification_Validation || null,
-      ProcessFlow_Validation: result.ProcessFlow_Validation || null,
-      
-      // Legacy fields for backward compatibility
-      auditReport: result.Final_report_card || '',
-      score: 85,
-      checks: [],
-      recommendations: [],
+      auditReport: finalReport,
+      score: 85, // Extract from report if needed
+      checks: [], // Parse from report if needed
+      recommendations: [], // Parse from report if needed
       rawResponse: result
     })
 
