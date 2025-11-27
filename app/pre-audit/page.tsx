@@ -200,10 +200,55 @@ export default function PreAudit() {
     return new Set(uploadedFiles.map(f => f.type))
   }
 
-  const startAudit = () => {
+  const startAudit = async () => {
     setIsAuditing(true)
     
-    setTimeout(() => {
+    try {
+      // Prepare data for API call
+      const uploadedFilenames = uploadedFiles.map(f => f.name)
+      
+      // Extract menu items and ingredients from uploaded files (if available)
+      // For now, we'll pass empty strings - you can add input fields later if needed
+      const menuItems = ''
+      const ingredientList = ''
+      
+      console.log('📋 [Frontend] Calling Pre-Audit API...')
+      console.log('📋 [Frontend] Files:', uploadedFilenames)
+      
+      const response = await fetch('/api/pre-audit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uploadedFiles: uploadedFilenames,
+          companyName: 'Test Company', // TODO: Add company name input field
+          businessType: 'Restaurant', // TODO: Add business type input field
+          menuItems,
+          ingredientList
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Pre-audit validation failed')
+      }
+
+      const data = await response.json()
+      console.log('✅ [Frontend] Audit result:', data)
+      
+      // Transform API response to match frontend format
+      const auditResult: AuditResult = {
+        overall_score: data.score,
+        checks: data.checks || [],
+        recommendations: data.recommendations || []
+      }
+      
+      setAuditResult(auditResult)
+      
+    } catch (error) {
+      console.error('❌ [Frontend] Audit error:', error)
+      
+      // Fallback to local validation if API fails
       const uploaded = getUploadedDocTypes()
       const checks: Array<{
         doc_type: string
@@ -224,16 +269,6 @@ export default function PreAudit() {
           }
         }
       })
-
-      const hasMenu = uploaded.has('menu_list')
-      const hasIngredients = uploaded.has('ingredient_list')
-      if (hasMenu && hasIngredients) {
-        checks.push({
-          doc_type: text.crossCheck,
-          status: 'warning' as const,
-          message: `⚠ ${text.warning}: ${text.crossCheckMsg}`
-        })
-      }
 
       const foundCount = checks.filter(c => c.status === 'found').length
       const totalCount = REQUIRED_DOCS.length
@@ -260,8 +295,9 @@ export default function PreAudit() {
         checks,
         recommendations
       })
+    } finally {
       setIsAuditing(false)
-    }, 2000)
+    }
   }
 
   const resetAudit = () => {

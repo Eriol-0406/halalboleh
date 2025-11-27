@@ -1,145 +1,348 @@
-﻿import { NextRequest, NextResponse } from 'next/server'
-import JamAI from 'jamaibase'
+import { NextRequest, NextResponse } from 'next/server'
+import puppeteer from 'puppeteer'
+import fs from 'fs/promises'
+import path from 'path'
+import { transformAllChapters } from '@/lib/jamaibase-ihcs'
 
+/**
+ * POST /api/generate-ihcs
+ * 
+ * IHCS (Internal Halal Control System) Auto-Architect
+ * Generates MPPHM 2020 compliant HAS manual from conversational Q&A
+ * 
+ * JAM AI Base Integration:
+ * - Knowledge Table: MPPHM 2020 Malaysian Halal Certification Manual
+ * - Chat Agent: Interviews user in friendly Bahasa Malaysia
+ * - Document Generator: Converts answers to formal 50-page PDF
+ */
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
     const body = await request.json()
-    console.log('📥 Request body received:', JSON.stringify(body, null, 2))
-    
-    const { data, responses } = body
+    const { companyName, businessType, responses } = body
 
-    // Get IHCS-specific credentials from environment
-    const token = process.env.NEXT_PUBLIC_JAMAI_PERSONAL_ACCESS_TOKEN
-    const projectId = process.env.NEXT_PUBLIC_JAMAI_PROJECT_ID
-    const baseURL = process.env.NEXT_PUBLIC_JAMAI_BASE_URL || 'https://api.jamaibase.com'
-
-    console.log('🔑 Credentials check - Token:', token ? '✓ Configured' : '✗ Missing')
-    console.log('🆔 Credentials check - Project ID:', projectId ? '✓ Configured' : '✗ Missing')
-
-    if (!token || !projectId) {
-      console.error('❌ JamAI credentials not configured')
+    if (!companyName || !responses) {
       return NextResponse.json(
-        { 
-          error: 'JamAI credentials not configured',
-          details: 'Please set NEXT_PUBLIC_JAMAI_PERSONAL_ACCESS_TOKEN and NEXT_PUBLIC_JAMAI_PROJECT_ID in .env.local'
-        },
-        { status: 500 }
+        { error: 'Missing required fields' },
+        { status: 400 }
       )
     }
 
-    // Initialize JamAI client
-    console.log('🔌 Initializing JamAI client...')
-    const jamai = new JamAI({ token, projectId, baseURL })
-    const tableId = 'ihcs_content_transformer'
+    console.log('🚀 Starting IHCS generation for:', companyName)
 
-    // CASE 1: Single Row Validation (Real-time) - New Format
-    if (data && Array.isArray(data) && data.length === 1) {
-      console.log('🔍 Real-time validation mode activated')
-      console.log('📋 Chapter:', data[0].chapter_number)
-      console.log('🏢 Company:', data[0].company_name)
-      
-      const rowData = data[0] // Single row payload
+    // STEP 1: Read HTML template
+    const templatePath = path.join(process.cwd(), 'templates', 'ihcs', 'manual-template.html')
+    let htmlTemplate = await fs.readFile(templatePath, 'utf-8')
 
-      try {
-        console.log('📤 Sending to JamAI table:', tableId)
-        console.log('📝 Row data:', JSON.stringify(rowData, null, 2))
+    // STEP 2: Transform user answers with JamAI Base AI
+    console.log('🤖 Transforming answers with JamAI Base AI...')
+    const transformedChapters = await transformAllChapters(responses, companyName, businessType || 'Perkhidmatan Makanan')
+    
+    console.log('✨ AI transformation complete:', transformedChapters.map(ch => `${ch.complianceScore}%`).join(', '))
 
-        const response = await jamai.table.addRow({
-          table_type: 'action',
-          table_id: tableId,
-          data: [rowData],
-          reindex: false
-        })
+    // STEP 3: Replace placeholders in template
+    const generationDate = new Date().toLocaleDateString('ms-MY', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
 
-        console.log('📨 JamAI response received')
-        console.log('Response structure:', JSON.stringify(response, null, 2))
-
-        // Extract HTML from formal_content with detailed logging
-        let generatedHTML = ''
+    // Build Chain of Thought Appendix Section
+    let chainOfThoughtHTML = ''
+    const hasReasoning = transformedChapters.some(ch => ch.chainOfThought && ch.chainOfThought.length > 0)
+    
+    if (hasReasoning) {
+      chainOfThoughtHTML = `
+    <!-- CHAIN OF THOUGHT REASONING APPENDIX -->
+    <div class="chapter">
+        <h2 class="chapter-title">LAMPIRAN A: ANALISIS PEMATUHAN AI</h2>
         
-        if (!response.rows || response.rows.length === 0) {
-          console.error('❌ No rows in response')
-          throw new Error('No rows returned from JamAI')
-        }
-
-        const columns = response.rows[0].columns
-        console.log('📊 Columns available:', Object.keys(columns || {}))
-
-        if (columns.formal_content) {
-          console.log('✓ formal_content column found')
-          const content = columns.formal_content.choices?.[0]?.message?.content
-          generatedHTML = typeof content === 'string' ? content : ''
-          console.log('📄 Generated HTML length:', generatedHTML.length)
-        } else {
-          console.error('❌ formal_content column not found in response')
-          console.error('Available columns:', Object.keys(columns))
-          throw new Error('formal_content column not found in table response')
-        }
-
-        if (!generatedHTML) {
-          console.warn('⚠️ Generated HTML is empty')
-        }
-
-        console.log('✅ Validation complete successfully')
-
-        // Return in format expected by frontend
-        return NextResponse.json({
-          results: [
-            {
-              formal_content: generatedHTML
-            }
-          ],
-          html_content: generatedHTML,
-          status: 'success'
-        })
-
-      } catch (jamaiError) {
-        console.error('❌ JamAI API Error:', jamaiError)
-        console.error('Error details:', {
-          message: (jamaiError as Error).message,
-          stack: (jamaiError as Error).stack
-        })
+        <div class="content">
+            <p>Bahagian ini memaparkan proses pemikiran AI dalam mentransformasi jawapan asal kepada 
+            kandungan manual yang mematuhi MPPHM 2020. Ini membantu memahami bagaimana setiap bab 
+            telah diperkayakan dan diselaraskan dengan standard halal Malaysia.</p>
+        </div>
         
-        return NextResponse.json(
-          { 
-            error: 'JamAI API call failed',
-            details: (jamaiError as Error).message,
-            suggestion: 'Check if table "ihcs_content_transformer" exists and has correct columns'
-          },
-          { status: 500 }
-        )
-      }
+        ${transformedChapters.map((ch, idx) => {
+          if (ch.chainOfThought && ch.chainOfThought.length > 0) {
+            return `
+        <div class="section-title">Bab ${idx + 1}: Proses Pemikiran AI</div>
+        <div class="content">
+            <p><strong>Skor Pematuhan:</strong> ${ch.complianceScore}%</p>
+            <p><strong>Rujukan MPPHM:</strong> ${ch.mpPHMReferences.join(', ') || 'Tiada rujukan khusus'}</p>
+            <p><strong>Langkah-langkah Analisis:</strong></p>
+            <ol class="procedure-list">
+                ${ch.chainOfThought.map(step => `<li>${step}</li>`).join('\n                ')}
+            </ol>
+            ${ch.suggestions.length > 0 ? `
+            <p><strong>Cadangan Penambahbaikan:</strong></p>
+            <ul class="procedure-list">
+                ${ch.suggestions.map(sug => `<li>${sug}</li>`).join('\n                ')}
+            </ul>
+            ` : ''}
+        </div>
+            `
+          }
+          return ''
+        }).join('\n        ')}
+    </div>
+      `
     }
 
-    // CASE 2: Invalid request format
-    console.warn('⚠️ Invalid request format')
-    console.log('Data:', data)
-    console.log('Responses:', responses)
+    htmlTemplate = htmlTemplate
+      .replace(/{{COMPANY_NAME}}/g, companyName)
+      .replace(/{{BUSINESS_TYPE}}/g, businessType || 'Perkhidmatan Makanan')
+      .replace(/{{GENERATION_DATE}}/g, generationDate)
+      .replace(/{{CHAIN_OF_THOUGHT_SECTION}}/g, chainOfThoughtHTML)
+      .replace(/{{CHAPTER_1_CONTENT}}/g, transformedChapters[0].formalContent)
+      .replace(/{{CHAPTER_2_CONTENT}}/g, transformedChapters[1].formalContent)
+      .replace(/{{CHAPTER_3_CONTENT}}/g, transformedChapters[2].formalContent)
+      .replace(/{{CHAPTER_4_CONTENT}}/g, transformedChapters[3].formalContent)
+      .replace(/{{CHAPTER_5_CONTENT}}/g, transformedChapters[4].formalContent)
+      .replace(/{{CHAPTER_6_CONTENT}}/g, transformedChapters[5].formalContent)
+      .replace(/{{CHAPTER_7_CONTENT}}/g, transformedChapters[6].formalContent)
+
+    // STEP 4: Generate PDF with Puppeteer
+    console.log('📄 Generating PDF...')
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    })
     
-    return NextResponse.json(
-      { 
-        error: 'Invalid request format',
-        details: 'Expected { data: [{ company_name, business_type, user_answer, chapter_number, language }] }',
-        received: { hasData: !!data, hasResponses: !!responses }
-      },
-      { status: 400 }
-    )
+    const page = await browser.newPage()
+    await page.setContent(htmlTemplate, { waitUntil: 'networkidle0' })
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '25mm',
+        right: '20mm',
+        bottom: '25mm',
+        left: '20mm'
+      }
+    })
+    
+    await browser.close()
+
+    // STEP 5: Save PDF to public folder
+    const filename = `${companyName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}.pdf`
+    const outputPath = path.join(process.cwd(), 'public', 'generated', 'ihcs', filename)
+    
+    // Ensure directory exists
+    await fs.mkdir(path.dirname(outputPath), { recursive: true })
+    await fs.writeFile(outputPath, pdfBuffer)
+
+    console.log('✅ PDF generated successfully:', filename)
+
+    // STEP 6: Return response with chain of thought
+    const pdfUrl = `/generated/ihcs/${filename}`
+
+    return NextResponse.json({
+      pdfUrl,
+      chapters: transformedChapters.map((ch, idx) => ({
+        title: `Bab ${idx + 1}`,
+        content: ch.formalContent.substring(0, 100) + '...', // Preview only
+        status: 'complete' as const,
+        complianceScore: ch.complianceScore,
+        suggestions: ch.suggestions,
+        mpPHMReferences: ch.mpPHMReferences,
+        chainOfThought: ch.chainOfThought // Include reasoning steps
+      })),
+      completionPercentage: 100,
+      averageComplianceScore: Math.round(
+        transformedChapters.reduce((sum, ch) => sum + ch.complianceScore, 0) / transformedChapters.length
+      )
+    })
 
   } catch (error) {
-    console.error('❌❌❌ CRITICAL SERVER ERROR ❌❌❌')
-    console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
-    console.error('Error message:', (error as Error).message)
-    console.error('Error stack:', (error as Error).stack)
-    
+    console.error('❌ IHCS generation error:', error)
     return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        details: (error as Error).message,
-        type: error instanceof Error ? error.constructor.name : 'Unknown',
-        stack: process.env.NODE_ENV === 'development' ? (error as Error).stack : undefined
-      },
+      { error: 'Failed to generate IHCS manual', details: (error as Error).message },
       { status: 500 }
     )
   }
+}
+
+/**
+ * Process user answers and transform to formal content
+ * TODO: Replace with JamAI Base RAG + Action Table
+ */
+async function processAnswersWithAI(responses: Record<string, string>) {
+  const CHAPTERS = [
+    {
+      id: 1,
+      title: 'Bab 1: Polisi Halal',
+      field: 'company_info',
+      transform: (answer: string) => {
+        // TODO: Use JamAI Base to transform informal answer to formal policy
+        return `
+          <p>Kami, <strong>${answer.split(',')[0] || 'syarikat ini'}</strong>, dengan ini mengisytiharkan 
+          komitmen kami untuk mematuhi semua kehendak pensijilan halal seperti yang ditetapkan oleh 
+          Jabatan Kemajuan Islam Malaysia (JAKIM).</p>
+          
+          <p><strong>Matlamat Halal:</strong><br>
+          ${answer}</p>
+          
+          <p>Kami berkomitmen untuk:</p>
+          <ul class="procedure-list">
+            <li>Memastikan semua bahan mentah adalah halal dan bersih</li>
+            <li>Mengelakkan sebarang pencemaran dengan bahan haram</li>
+            <li>Melaksanakan audit dalaman secara berkala</li>
+            <li>Melatih kakitangan tentang keperluan halal</li>
+          </ul>
+        `
+      }
+    },
+    {
+      id: 2,
+      title: 'Bab 2: Kawalan Bahan Mentah',
+      field: 'raw_material_verification',
+      transform: (answer: string) => {
+        return `
+          <p>Syarikat kami melaksanakan kawalan ketat terhadap semua bahan mentah yang diterima:</p>
+          
+          <p><strong>Prosedur Semakan:</strong><br>
+          ${answer}</p>
+          
+          <ol class="procedure-list">
+            <li>Semak sijil halal pembekal (mesti sah dan dalam tempoh)</li>
+            <li>Periksa label produk untuk logo halal yang diiktiraf</li>
+            <li>Rekodkan semua maklumat penerimaan dalam Borang Penerimaan Bahan</li>
+            <li>Simpan sijil halal pembekal dalam fail halal</li>
+          </ol>
+        `
+      }
+    },
+    {
+      id: 3,
+      title: 'Bab 3: Rekod Pembelian',
+      field: 'purchase_records',
+      transform: (answer: string) => {
+        return `
+          <p><strong>Sistem Rekod Pembelian:</strong><br>
+          ${answer}</p>
+          
+          <p>Semua rekod pembelian termasuk:</p>
+          <ul class="procedure-list">
+            <li>Invois dan resit pembelian</li>
+            <li>Sijil halal pembekal</li>
+            <li>Surat jaminan halal (jika berkenaan)</li>
+            <li>Borang penerimaan bahan mentah</li>
+          </ul>
+          
+          <p>Rekod-rekod ini akan disimpan dengan kemas dalam fail halal dan boleh dirujuk 
+          bila-bila masa untuk tujuan audit.</p>
+        `
+      }
+    },
+    {
+      id: 4,
+      title: 'Bab 4: Prosedur Pembersihan',
+      field: 'cleaning_procedures',
+      transform: (answer: string) => {
+        return `
+          <p><strong>Prosedur Pembersihan Standard:</strong><br>
+          ${answer}</p>
+          
+          <p><strong>Langkah-langkah Pembersihan:</strong></p>
+          <ol class="procedure-list">
+            <li><strong>Pra-pembersihan:</strong> Buang sisa makanan dan kotoran kasar</li>
+            <li><strong>Pencucian:</strong> Basuh dengan agen pembersih yang diluluskan halal</li>
+            <li><strong>Pembilasan:</strong> Bilas dengan air bersih yang mencukupi</li>
+            <li><strong>Sanitasi:</strong> Gunakan bahan sanitasi jika perlu</li>
+            <li><strong>Pengeringan:</strong> Keringkan peralatan sebelum digunakan semula</li>
+          </ol>
+          
+          <p>Semua agen pembersihan yang digunakan mestilah mempunyai sijil halal atau 
+          surat pengesahan tidak mengandungi bahan haram.</p>
+        `
+      }
+    },
+    {
+      id: 5,
+      title: 'Bab 5: Tanggungjawab Halal',
+      field: 'halal_responsibility',
+      transform: (answer: string) => {
+        return `
+          <p><strong>Tanggungjawab Eksekutif Halal:</strong><br>
+          ${answer}</p>
+          
+          <p>Eksekutif Halal yang dilantik bertanggungjawab untuk:</p>
+          <ul class="procedure-list">
+            <li>Memastikan pematuhan kepada Manual IHCS ini</li>
+            <li>Menjalankan audit dalaman sekurang-kurangnya setiap 6 bulan</li>
+            <li>Menguruskan semua dokumen dan rekod berkaitan halal</li>
+            <li>Menghadiri kursus halal yang diiktiraf JAKIM</li>
+            <li>Menjadi penghubung antara syarikat dengan JAKIM</li>
+            <li>Memastikan semua kakitangan memahami keperluan halal</li>
+          </ul>
+          
+          <p><em>Nota: Eksekutif Halal mestilah beragama Islam dan mempunyai 
+          sijil Halal Professional Board (HPB) atau setaraf.</em></p>
+        `
+      }
+    },
+    {
+      id: 6,
+      title: 'Bab 6: Rekod Latihan',
+      field: 'training_records',
+      transform: (answer: string) => {
+        return `
+          <p><strong>Program Latihan Halal:</strong><br>
+          ${answer}</p>
+          
+          <p>Syarikat komited untuk memberikan latihan halal kepada semua kakitangan:</p>
+          
+          <p><strong>Jenis-jenis Latihan:</strong></p>
+          <ul class="procedure-list">
+            <li><strong>Induksi Halal:</strong> Untuk kakitangan baru (wajib dalam 1 bulan pertama)</li>
+            <li><strong>Latihan Tahunan:</strong> Refresh pengetahuan halal</li>
+            <li><strong>Latihan Khusus:</strong> Untuk kakitangan pengendalian makanan</li>
+            <li><strong>Kursus HPB:</strong> Untuk Eksekutif Halal</li>
+          </ul>
+          
+          <p>Semua latihan akan direkodkan dengan lengkap termasuk tarikh, 
+          topik, dan tandatangan peserta.</p>
+        `
+      }
+    },
+    {
+      id: 7,
+      title: 'Bab 7: Kebolehkesanan',
+      field: 'traceability_system',
+      transform: (answer: string) => {
+        return `
+          <p><strong>Sistem Kebolehkesanan:</strong><br>
+          ${answer}</p>
+          
+          <p>Syarikat melaksanakan sistem kebolehkesanan untuk:</p>
+          
+          <ol class="procedure-list">
+            <li><strong>Kebolehkesanan Hadapan (Forward):</strong><br>
+            Dapat mengesan produk yang telah dihantar kepada pelanggan</li>
+            
+            <li><strong>Kebolehkesanan Belakang (Backward):</strong><br>
+            Dapat mengesan bahan mentah yang digunakan dalam produk</li>
+          </ol>
+          
+          <p><strong>Maklumat yang direkod:</strong></p>
+          <ul class="procedure-list">
+            <li>Nombor batch produk</li>
+            <li>Tarikh pengeluaran</li>
+            <li>Sumber bahan mentah (nama pembekal, no. sijil halal)</li>
+            <li>Destinasi penghantaran (jika berkenaan)</li>
+          </ul>
+          
+          <p>Sistem ini membolehkan syarikat bertindak pantas sekiranya 
+          berlaku isu berkaitan halal.</p>
+        `
+      }
+    }
+  ]
+
+  return CHAPTERS.map(chapter => ({
+    title: chapter.title,
+    content: chapter.transform(responses[chapter.field] || 'Tiada maklumat disediakan'),
+    status: responses[chapter.field] ? 'complete' as const : 'incomplete' as const
+  }))
 }

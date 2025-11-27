@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { validatePreAudit } from '@/lib/jamaibase-preaudit'
 
 /**
  * POST /api/pre-audit
@@ -6,102 +7,92 @@ import { NextRequest, NextResponse } from 'next/server'
  * Pre-Audit Digital Auditor
  * Validates document completeness and scores audit readiness
  * 
- * JAM AI Base Integration:
+ * JamAI Base Integration:
+ * - Action Table: pre_audit_validator
  * - Document Validator: Checks for required JAKIM documents
- * - Checklist Scorer: Validates against MPPHM 2020 requirements
- * - Logic Checker: Verifies menu-ingredient consistency
+ * - Menu-Ingredient Logic: Verifies consistency between menu and ingredients
+ * - RAG-powered recommendations from MPPHM 2020
  */
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const businessType = formData.get('businessType') as string
+    const body = await request.json()
+    
+    const {
+      uploadedFiles = [],
+      companyName = '',
+      businessType = '',
+      menuItems = '',
+      ingredientList = ''
+    } = body
 
-    // Extract uploaded documents
-    const documents: { name: string; type: string }[] = []
-    for (const [key, value] of formData.entries()) {
-      if (key.startsWith('document_') && value instanceof File) {
-        documents.push({
-          name: value.name,
-          type: value.type
-        })
-      }
-    }
-
-    if (documents.length === 0) {
+    if (uploadedFiles.length === 0) {
       return NextResponse.json(
         { error: 'No documents uploaded' },
         { status: 400 }
       )
     }
 
-    // TODO: Connect to JAM AI Base
-    // const jamAIClient = new JamAIClient(process.env.JAMAI_API_KEY)
-    // const auditResult = await jamAIClient.validatePreAudit({
-    //   documents,
-    //   businessType,
-    //   checklistVersion: 'mpphm-2020'
-    // })
+    console.log('📋 [Pre-Audit API] Processing request...')
+    console.log('📋 [Pre-Audit API] Files:', uploadedFiles.length)
+    console.log('📋 [Pre-Audit API] Company:', companyName)
+    console.log('📋 [Pre-Audit API] Business Type:', businessType)
 
-    // Required documents checklist
-    const requiredDocs = [
-      'Carta Alir Proses (Process Flow Chart)',
-      'Sijil Latihan Halal (Halal Training Certificate)',
-      'Senarai Menu (Menu List)',
-      'Senarai Ramuan (Ingredient List)',
-      'Polisi Halal (Halal Policy Poster)',
-      'Kontrak Kawalan Makhluk Perosak (Pest Control Contract)',
-      'Manual IHCS (IHCS Manual)'
-    ]
+    // Call JamAI Base validation
+    const result = await validatePreAudit({
+      uploadedFiles,
+      companyName,
+      businessType,
+      menuItems,
+      ingredientList
+    })
 
-    // Mock document detection
-    const detectedDocs = documents.map(doc => {
-      const docName = doc.name.toLowerCase()
-      if (docName.includes('flow') || docName.includes('carta')) return requiredDocs[0]
-      if (docName.includes('training') || docName.includes('latihan')) return requiredDocs[1]
-      if (docName.includes('menu')) return requiredDocs[2]
-      if (docName.includes('ingredient') || docName.includes('ramuan')) return requiredDocs[3]
-      if (docName.includes('policy') || docName.includes('polisi')) return requiredDocs[4]
-      if (docName.includes('pest') || docName.includes('kawalan')) return requiredDocs[5]
-      if (docName.includes('ihcs') || docName.includes('manual')) return requiredDocs[6]
-      return null
-    }).filter(Boolean) as string[]
+    // Format response for frontend
+    const checks = result.documentChecklist.map(doc => ({
+      doc_type: doc.document,
+      status: doc.found ? 'found' : 'missing',
+      message: doc.found 
+        ? `✓ Ditemui: ${doc.document}${doc.filename ? ` (${doc.filename})` : ''}`
+        : `✗ Belum Ditemui: ${doc.document}`
+    }))
 
-    const missingDocuments = requiredDocs.filter(req => !detectedDocs.includes(req))
-    const passedChecks = detectedDocs.length
-    const totalChecks = requiredDocs.length
-    const score = Math.round((passedChecks / totalChecks) * 100)
-
-    // Generate warnings and recommendations
-    const warnings: string[] = []
-    const recommendations: string[] = []
-
-    if (score < 70) {
-      warnings.push('Skor anda di bawah 70%. Permohonan mungkin ditolak oleh JAKIM.')
-    }
-    
-    if (missingDocuments.length > 0) {
-      warnings.push(`${missingDocuments.length} dokumen wajib masih belum dimuat naik.`)
+    // Add menu-ingredient validation warnings
+    if (result.menuMismatches.length > 0) {
+      result.menuMismatches.forEach(mismatch => {
+        checks.push({
+          doc_type: 'Menu-Ingredient Consistency',
+          status: 'warning',
+          message: `⚠ "${mismatch.menuItem}" tidak sepadan dengan senarai bahan mentah. Kekurangan: ${mismatch.missingIngredients.join(', ')}`
+        })
+      })
     }
 
-    if (missingDocuments.includes('Manual IHCS (IHCS Manual)')) {
-      recommendations.push('Gunakan "IHCS Auto-Architect" untuk menjana manual IHCS secara automatik.')
+    // Add risky ingredient warnings
+    if (result.riskyIngredients.length > 0) {
+      checks.push({
+        doc_type: 'Risky Ingredients Detected',
+        status: 'warning',
+        message: `⚠ Bahan berisiko ditemui: ${result.riskyIngredients.join(', ')}. Sila pastikan sijil halal tersedia.`
+      })
     }
 
-    if (missingDocuments.includes('Sijil Latihan Halal (Halal Training Certificate)')) {
-      recommendations.push('Semua kakitangan mesti menghadiri latihan halal yang diiktiraf JAKIM.')
-    }
+    const recommendations = result.recommendations.map(rec => ({
+      issue: rec.includes('dokumen') || rec.includes('document') 
+        ? 'Dokumen Tidak Lengkap' 
+        : 'Penambahbaikan Diperlukan',
+      action: rec
+    }))
 
     return NextResponse.json({
-      score,
-      totalChecks,
-      passedChecks,
-      missingDocuments,
-      warnings,
-      recommendations
+      score: result.auditScore,
+      totalChecks: result.documentChecklist.length,
+      passedChecks: result.documentChecklist.filter(d => d.found).length,
+      checks,
+      recommendations,
+      auditReport: result.auditReport
     })
 
   } catch (error) {
-    console.error('Pre-audit validation error:', error)
+    console.error('❌ [Pre-Audit API] Error:', error)
     return NextResponse.json(
       { error: 'Failed to validate pre-audit' },
       { status: 500 }
