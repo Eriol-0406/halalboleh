@@ -455,28 +455,10 @@ export default function PreAudit() {
           {/* Left Column (50%) - Smart Upload List */}
           <div className="lg:col-span-6">
             <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-              <h2 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-[#2D4A3E] mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-[#C5E86C]" />
                 {text.requiredDocs}
               </h2>
-
-
-              {/* Progress Bar - Moved to Top */}
-              <div className="mb-4 pb-4 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-[#2D4A3E]">Progress</span>
-                  <span className="text-xs font-bold text-[#2D4A3E]">
-                    {getTotalUploaded()}/{REQUIRED_DOCS.length}
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] transition-all duration-500"
-                    style={{ width: `${(getTotalUploaded() / REQUIRED_DOCS.length) * 100}%` }}
-                  />
-                </div>
-              </div>
-  
               
               {/* Company Info */}
               <div className="space-y-2 mb-4">

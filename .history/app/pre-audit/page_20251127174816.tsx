@@ -460,7 +460,6 @@ export default function PreAudit() {
                 {text.requiredDocs}
               </h2>
 
-
               {/* Progress Bar - Moved to Top */}
               <div className="mb-4 pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-2">
@@ -470,13 +469,12 @@ export default function PreAudit() {
                   </span>
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
+                  <div 
                     className="h-full bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] transition-all duration-500"
                     style={{ width: `${(getTotalUploaded() / REQUIRED_DOCS.length) * 100}%` }}
                   />
                 </div>
               </div>
-  
               
               {/* Company Info */}
               <div className="space-y-2 mb-4">

@@ -75,7 +75,6 @@ export default function PreAudit() {
   const [fullReport, setFullReport] = useState<string>('')
   const [companyName, setCompanyName] = useState('')
   const [businessType, setBusinessType] = useState('')
-  const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null)
 
   const t = {
     en: {
@@ -460,7 +459,6 @@ export default function PreAudit() {
                 {text.requiredDocs}
               </h2>
 
-
               {/* Progress Bar - Moved to Top */}
               <div className="mb-4 pb-4 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-2">
@@ -470,13 +468,12 @@ export default function PreAudit() {
                   </span>
                 </div>
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div
+                  <div 
                     className="h-full bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] transition-all duration-500"
                     style={{ width: `${(getTotalUploaded() / REQUIRED_DOCS.length) * 100}%` }}
                   />
                 </div>
               </div>
-  
               
               {/* Company Info */}
               <div className="space-y-2 mb-4">
@@ -507,28 +504,16 @@ export default function PreAudit() {
 
                   return (
                     <div key={doc.type}>
-                      <label 
-                        className={`flex items-center gap-3 p-2.5 rounded-lg border-2 transition-all cursor-pointer group ${
-                          hasFile 
-                            ? 'bg-[#C5E86C]/20 border-[#C5E86C]' 
-                            : 'bg-gray-50 border-gray-200 hover:border-[#C5E86C] hover:bg-gray-100'
-                        }`}
-                        onClick={() => {
-                          if (hasFile) {
-                            // Set as selected file for preview
-                            if (doc.type === 'photos' && (file as UploadedFile[]).length > 0) {
-                              setSelectedFile((file as UploadedFile[])[0])
-                            } else if (file && !Array.isArray(file)) {
-                              setSelectedFile(file as UploadedFile)
-                            }
-                          }
-                        }}
-                      >
+                      <label className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer group ${
+                        hasFile 
+                          ? 'bg-[#C5E86C]/20 border-[#C5E86C]' 
+                          : 'bg-gray-50 border-gray-200 hover:border-[#C5E86C] hover:bg-gray-100'
+                      }`}>
                         <div className="flex-shrink-0">
                           {hasFile ? (
-                            <CheckCircle className="w-4 h-4 text-[#2D4A3E]" />
+                            <CheckCircle className="w-5 h-5 text-[#2D4A3E]" />
                           ) : (
-                            <Upload className="w-4 h-4 text-gray-400 group-hover:text-[#556B56]" />
+                            <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#556B56]" />
                           )}
                         </div>
                         
@@ -537,7 +522,7 @@ export default function PreAudit() {
                             {doc.label}
                           </div>
                           {hasFile && (
-                            <div className="text-xs text-gray-600 truncate">
+                            <div className="text-xs text-gray-600 truncate mt-1">
                               {doc.type === 'photos' 
                                 ? `${(file as UploadedFile[]).length} ${language === 'bm' ? 'gambar' : 'photos'}`
                                 : (file as UploadedFile).name
@@ -551,12 +536,11 @@ export default function PreAudit() {
                             type="button"
                             onClick={(e) => {
                               e.preventDefault()
-                              e.stopPropagation()
                               removeSpecificFile(doc.type)
                             }}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-4 h-4" />
                           </button>
                         )}
 
@@ -578,22 +562,6 @@ export default function PreAudit() {
                               }
                             })
                             e.target.value = ''
-                            
-                            // Set first file as selected for preview
-                            if (files.length > 0) {
-                              const reader = new FileReader()
-                              reader.onload = () => {
-                                setSelectedFile({
-                                  id: Date.now().toString(),
-                                  name: files[0].name,
-                                  type: doc.type,
-                                  url: reader.result as string,
-                                  size: files[0].size,
-                                  file: files[0]
-                                })
-                              }
-                              reader.readAsDataURL(files[0])
-                            }
                           }}
                           className="hidden"
                         />
@@ -603,157 +571,111 @@ export default function PreAudit() {
                 })}
               </div>
 
+              {/* Progress */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-[#2D4A3E]">Progress</span>
+                  <span className="text-sm font-bold text-[#2D4A3E]">
+                    {getTotalUploaded()}/{REQUIRED_DOCS.length}
+                  </span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] transition-all duration-500"
+                    style={{ width: `${(getTotalUploaded() / REQUIRED_DOCS.length) * 100}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Right Column (50%) - Results Area with Sticky Position */}
-          <div className="lg:col-span-6">
-            <div className="sticky top-8">
-              {!auditResult ? (
-                /* Initial State - Ready to Inspect or File Preview */
-                <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm min-h-[600px] flex flex-col">
-                  {isAuditing ? (
-                    /* Loading State */
-                    <div className="flex-1 flex flex-col items-center justify-center">
-                      <div className="relative w-32 h-32 mx-auto mb-6">
-                        <RefreshCw className="w-32 h-32 text-[#C5E86C] animate-spin" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-2">
-                        {text.analyzing}
-                      </h3>
-                      <p className="text-gray-600">
-                        {language === 'bm' 
-                          ? 'Menganalisis dokumen anda...' 
-                          : 'Analyzing your documents...'}
-                      </p>
+          {/* Right Column (60%) - Results Area */}
+          <div className="lg:col-span-3">
+            {!auditResult ? (
+              /* Initial State - Ready to Inspect */
+              <div className="bg-white rounded-2xl p-12 border border-gray-200 shadow-sm min-h-[600px] flex flex-col items-center justify-center">
+                {isAuditing ? (
+                  /* Loading State */
+                  <div className="text-center">
+                    <div className="relative w-32 h-32 mx-auto mb-6">
+                      <RefreshCw className="w-32 h-32 text-[#C5E86C] animate-spin" />
                     </div>
-                  ) : getTotalUploaded() > 0 && selectedFile ? (
-                    /* File Preview State */
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-                        <h3 className="text-lg font-bold text-[#2D4A3E]">
-                          {language === 'bm' ? 'Pratonton Fail' : 'File Preview'}
-                        </h3>
-                        <button
-                          onClick={() => setSelectedFile(null)}
-                          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-
-                      <div className="flex-1 flex flex-col items-center justify-center">
-                        {selectedFile.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          /* Image Preview */
-                          <div className="w-full max-w-md">
-                            <img 
-                              src={selectedFile.url} 
-                              alt={selectedFile.name} 
-                              className="w-full h-auto rounded-xl shadow-lg border-2 border-gray-200"
-                            />
-                          </div>
-                        ) : (
-                          /* Document Icon */
-                          <div className="text-center">
-                            <div className="w-32 h-32 mx-auto mb-6 rounded-2xl bg-[#2D4A3E] flex items-center justify-center">
-                              <FileText className="w-16 h-16 text-[#C5E86C]" />
-                            </div>
-                            <div className="text-xl font-bold text-[#2D4A3E] mb-2 px-4 break-words">
-                              {selectedFile.name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {(selectedFile.size / 1024).toFixed(1)} KB
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-6 pt-6 border-t border-gray-200">
-                        <button
-                          onClick={startAudit}
-                          disabled={getTotalUploaded() < 3}
-                          className="w-full py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-xl font-bold text-lg hover:scale-[1.02] hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center gap-3"
-                        >
-                          <Sparkles className="w-6 h-6 text-[#C5E86C]" />
-                          {text.startAudit}
-                        </button>
-                        
-                        {getTotalUploaded() < 3 && (
-                          <p className="text-sm text-gray-500 mt-3 text-center">
-                            {language === 'bm' 
-                              ? `Muat naik sekurang-kurangnya 3 dokumen`
-                              : 'Upload at least 3 documents'}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    /* Empty State - Progress Ring */
-                    <div className="flex-1 flex flex-col items-center justify-center">
-                      <div className="relative w-48 h-48 mx-auto mb-8">
-                        <svg className="w-full h-full transform -rotate-90">
-                          <circle
-                            cx="96"
-                            cy="96"
-                            r="80"
-                            stroke="#E5E7EB"
-                            strokeWidth="16"
-                            fill="none"
-                          />
-                          <circle
-                            cx="96"
-                            cy="96"
-                            r="80"
-                            stroke="#C5E86C"
-                            strokeWidth="16"
-                            fill="none"
-                            strokeDasharray={2 * Math.PI * 80}
-                            strokeDashoffset={2 * Math.PI * 80 * (1 - getTotalUploaded() / REQUIRED_DOCS.length)}
-                            strokeLinecap="round"
-                            className="transition-all duration-500"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <div className="text-5xl font-bold text-[#2D4A3E]">
-                            {getTotalUploaded()}
-                          </div>
-                          <div className="text-xl text-gray-500 font-semibold">
-                            / {REQUIRED_DOCS.length}
-                          </div>
+                    <h3 className="text-2xl font-bold text-[#2D4A3E] mb-2">
+                      {text.analyzing}
+                    </h3>
+                    <p className="text-gray-600">
+                      {language === 'bm' 
+                        ? 'Menganalisis dokumen anda...' 
+                        : 'Analyzing your documents...'}
+                    </p>
+                  </div>
+                ) : (
+                  /* Ready State */
+                  <div className="text-center max-w-md">
+                    <div className="relative w-48 h-48 mx-auto mb-8">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle
+                          cx="96"
+                          cy="96"
+                          r="80"
+                          stroke="#E5E7EB"
+                          strokeWidth="16"
+                          fill="none"
+                        />
+                        <circle
+                          cx="96"
+                          cy="96"
+                          r="80"
+                          stroke="#C5E86C"
+                          strokeWidth="16"
+                          fill="none"
+                          strokeDasharray={2 * Math.PI * 80}
+                          strokeDashoffset={2 * Math.PI * 80 * (1 - getTotalUploaded() / REQUIRED_DOCS.length)}
+                          strokeLinecap="round"
+                          className="transition-all duration-500"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className="text-5xl font-bold text-[#2D4A3E]">
+                          {getTotalUploaded()}
+                        </div>
+                        <div className="text-xl text-gray-500 font-semibold">
+                          / {REQUIRED_DOCS.length}
                         </div>
                       </div>
-
-                      <h3 className="text-2xl font-bold text-[#2D4A3E] mb-3">
-                        {language === 'bm' ? 'Sedia untuk Diperiksa' : 'Ready to Inspect'}
-                      </h3>
-                      <p className="text-gray-600 mb-8 text-center max-w-sm">
-                        {language === 'bm' 
-                          ? 'Muat naik dokumen di sebelah kiri dan klik butang di bawah untuk memulakan pemeriksaan.'
-                          : 'Upload documents on the left and click the button below to start inspection.'}
-                      </p>
-
-                      <button
-                        onClick={startAudit}
-                        disabled={getTotalUploaded() < 3}
-                        className="px-10 py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center gap-3"
-                      >
-                        <Sparkles className="w-6 h-6 text-[#C5E86C]" />
-                        {text.startAudit}
-                      </button>
-                      
-                      {getTotalUploaded() < 3 && (
-                        <p className="text-sm text-gray-500 mt-4">
-                          {language === 'bm' 
-                            ? `Muat naik sekurang-kurangnya 3 dokumen`
-                            : 'Upload at least 3 documents'}
-                        </p>
-                      )}
                     </div>
-                  )}
-                </div>
-              ) : (
-                /* Result State - Audit Results */
-                <div className="space-y-6">
+
+                    <h3 className="text-2xl font-bold text-[#2D4A3E] mb-3">
+                      {language === 'bm' ? 'Sedia untuk Diperiksa' : 'Ready to Inspect'}
+                    </h3>
+                    <p className="text-gray-600 mb-8">
+                      {language === 'bm' 
+                        ? 'Muat naik dokumen di sebelah kiri dan klik butang di bawah untuk memulakan pemeriksaan.'
+                        : 'Upload documents on the left and click the button below to start inspection.'}
+                    </p>
+
+                    <button
+                      onClick={startAudit}
+                      disabled={getTotalUploaded() < 3}
+                      className="px-10 py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center gap-3 mx-auto"
+                    >
+                      <Sparkles className="w-6 h-6 text-[#C5E86C]" />
+                      {text.startAudit}
+                    </button>
+                    
+                    {getTotalUploaded() < 3 && (
+                      <p className="text-sm text-gray-500 mt-4">
+                        {language === 'bm' 
+                          ? `Muat naik sekurang-kurangnya 3 dokumen`
+                          : 'Upload at least 3 documents'}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Result State - Audit Results */
+              <div className="space-y-6">
             {/* Score Circle */}
             <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
               <div className="flex flex-col items-center">
@@ -855,9 +777,8 @@ export default function PreAudit() {
                 </button>
               )}
             </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
