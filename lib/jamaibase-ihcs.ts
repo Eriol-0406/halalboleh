@@ -158,6 +158,7 @@ export async function transformChapterContent(
     const formalContent = cols.formal_content?.choices?.[0]?.message?.content || ''
     const complianceScoreText = cols.compliance_score?.choices?.[0]?.message?.content || '75'
     const suggestionsText = cols.suggestions?.choices?.[0]?.message?.content || ''
+    const reasoningText = cols.reasoning?.choices?.[0]?.message?.content || cols.chain_of_thought?.choices?.[0]?.message?.content || ''
     
     // Extract RAG citations if present
     const formalCitations = cols.formal_content?.choices?.[0]?.references || []
@@ -174,9 +175,13 @@ export async function transformChapterContent(
     // Extract MPPHM references from content (citations are inline)
     const mpPHMReferences = extractMPPHMReferences(cleanedContent)
     
+    // Parse chain of thought reasoning steps
+    const chainOfThought = parseChainOfThought(reasoningText)
+    
     console.log(`  ✨ [AI Result] Compliance Score: ${complianceScore}%`)
     console.log(`  ✨ [AI Result] Content Length: ${cleanedContent.length} chars`)
     console.log(`  ✨ [AI Result] MPPHM References: ${mpPHMReferences.join(', ')}`)
+    console.log(`  ✨ [AI Result] Reasoning Steps: ${chainOfThought.length} steps`)
     console.log(`  ✨ [RAG] Citations Retrieved: ${formalCitations.length + scoreCitations.length}`)
 
     return {
@@ -184,7 +189,7 @@ export async function transformChapterContent(
       complianceScore,
       suggestions,
       mpPHMReferences,
-      chainOfThought: []
+      chainOfThought
     }
   } catch (error) {
     console.error(`  ❌ [JamAI Error] Chapter ${request.chapterNumber} transformation failed:`, error)
@@ -234,20 +239,22 @@ Output:
   <li>Rekodkan maklumat dalam Borang Penerimaan Bahan</li>
 </ol>
 
-OUTPUT (JSON):
-{
-  "formal_content": "HTML formatted content here",
-  "compliance_score": 85,
-  "suggestions": ["Consider adding verification frequency", "Specify record retention period"],
-  "mpphm_references": ["Seksyen 4.3", "Seksyen 6.1"],
-  "chain_of_thought": [
-    "Step 1: Detected informal English/Manglish input",
-    "Step 2: Extracted key actions: check certificate, verify logo",
-    "Step 3: Mapped to MPPHM Seksyen 4.3 requirements",
-    "Step 4: Added mandatory step: record keeping",
-    "Step 5: Formatted in formal Bahasa Malaysia"
-  ]
-}
+OUTPUT:
+Return structured content in the designated output columns.
+
+For 'reasoning' column, provide step-by-step thinking process:
+1. Input Analysis: Describe what user said (language, key points)
+2. MPPHM Mapping: Which section(s) apply to this answer
+3. Gap Analysis: What's missing from user's answer vs. MPPHM requirements
+4. Enrichment: What you added to make it compliant
+5. Compliance Check: Why the score is X%
+
+Example reasoning:
+"Step 1: User input in Manglish - 'Basuh pakai sabun kuat, bilas air paip dua kali'
+Step 2: Mapped to MPPHM 2020 Seksyen 4.4 (Sanitasi & Kebersihan)
+Step 3: User mentioned washing (✓) and rinsing 2x (✓). Missing: sanitizer usage, drying procedure
+Step 4: Added sanitizer step and air-drying requirement per MPPHM standard
+Step 5: Compliance Score: 85% - User exceeds minimum (1x rinse) but missing sanitizer documentation"
 `
 }
 
@@ -419,6 +426,38 @@ function extractMPPHMReferences(content: string): string[] {
   }
   
   return references
+}
+
+/**
+ * Parse chain of thought reasoning into steps
+ */
+function parseChainOfThought(reasoningText: string): string[] {
+  if (!reasoningText || reasoningText.trim().length === 0) {
+    return []
+  }
+  
+  const steps: string[] = []
+  
+  // Try to extract numbered steps (Step 1:, 1., etc.)
+  const stepPattern = /(?:Step |Langkah )?\d+[:.\)]?\s*(.+?)(?=(?:Step |Langkah )?\d+[:.\)]|$)/gi
+  let match
+  while ((match = stepPattern.exec(reasoningText)) !== null) {
+    const step = match[1]?.trim()
+    if (step && step.length > 10) {
+      steps.push(step)
+    }
+  }
+  
+  // If no numbered steps found, split by newlines
+  if (steps.length === 0) {
+    const lines = reasoningText.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 20 && !line.startsWith('Output') && !line.startsWith('{'))
+    
+    return lines.slice(0, 8) // Max 8 steps
+  }
+  
+  return steps.slice(0, 8) // Max 8 steps
 }
 
 /**
