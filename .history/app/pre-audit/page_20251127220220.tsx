@@ -249,72 +249,81 @@ export default function PreAudit() {
     try {
       const parsed = typeof data === 'string' ? JSON.parse(data) : data
       
-      let report = ''
+      let report = `## Status Pemeriksaan\n\n`
       
-      // Overall Status Section
-      report += `## Overall Status\n\n`
-      
+      // Status section
       if (parsed.status) {
         report += `**Status:** ${parsed.status}\n\n`
       }
       
+      // Documents count
       if (parsed.documents_uploaded !== undefined && parsed.documents_total !== undefined) {
-        report += `**Document Progress:** ${parsed.documents_uploaded}/${parsed.documents_total} uploaded\n\n`
+        report += `**Dokumen Dihantar:** ${parsed.documents_uploaded} daripada ${parsed.documents_total}\n\n`
       }
       
-      // Checklist Details Section
+      if (parsed.score || parsed.score_deduction) {
+        report += `**Potongan Markah:** ${parsed.score_deduction || parsed.score || 0} markah\n\n`
+      }
+      
+      // Executive Summary section
+      if (parsed.summary) {
+        report += `## Ringkasan Eksekutif\n\n${parsed.summary}\n\n`
+      }
+      
+      // Detailed Findings section - handle checklist array structure
       if (parsed.checklist && Array.isArray(parsed.checklist)) {
-        report += `## Checklist Details\n\n`
-        
+        report += `## Senarai Semak Dokumen\n\n`
         parsed.checklist.forEach((item: any, idx: number) => {
-          const statusIcon = item.found ? '✅' : (item.skipped ? '⏭️' : '❌')
-          const foundStatus = item.found ? 'Found' : (item.skipped ? 'Skipped' : 'Not Found')
+          report += `### ${idx + 1}. ${item.requirement_name || item.name || 'Dokumen'}\n\n`
           
-          report += `**${idx + 1}. ${item.requirement_name || 'Document'}**\n\n`
-          report += `- ${statusIcon} **Status:** ${foundStatus}\n`
+          // Status indicator
+          const statusEmoji = item.found ? '✅' : (item.skipped ? '⏭️' : '❌')
+          const statusText = item.found ? 'Dijumpai' : (item.skipped ? 'Dilangkau' : 'Tidak Dijumpai')
+          report += `${statusEmoji} **Status:** ${statusText}\n\n`
           
+          // Filename if available
           if (item.filename) {
-            report += `- **Filename:** ${item.filename}\n`
+            report += `**Nama Fail:** ${item.filename}\n\n`
           }
           
+          // Note/remarks
           if (item.note) {
-            report += `- **Note:** ${item.note}\n`
+            report += `**Catatan:** ${item.note}\n\n`
           }
-          
-          report += `\n`
         })
       } else if (parsed.items && Array.isArray(parsed.items)) {
-        report += `## Items\n\n`
+        report += `## Penemuan Terperinci\n\n`
         parsed.items.forEach((item: any, idx: number) => {
-          report += `**${idx + 1}. ${item.item || item.name || item.category || 'Item'}**\n\n`
+          report += `### ${idx + 1}. ${item.item || item.name || item.category || 'Item'}\n\n`
           
           if (item.finding || item.description) {
-            report += `- ${item.finding || item.description}\n`
+            report += `**Penemuan:** ${item.finding || item.description}\n\n`
+          }
+          
+          if (item.is_violation || item.violation) {
+            report += `⚠️ **Pelanggaran:** Ya\n\n`
           }
           
           if (item.status) {
-            report += `- **Status:** ${item.status}\n`
+            report += `**Status:** ${item.status}\n\n`
           }
           
           if (item.severity) {
-            report += `- **Severity:** ${item.severity}\n`
+            report += `**Tahap Keseriusan:** ${item.severity}\n\n`
           }
           
           if (item.remarks || item.notes) {
-            report += `- **Remarks:** ${item.remarks || item.notes}\n`
+            report += `**Catatan:** ${item.remarks || item.notes}\n\n`
           }
-          
-          report += `\n`
         })
       } else if (parsed.findings && Array.isArray(parsed.findings)) {
-        report += `## Findings\n\n`
+        report += `## Penemuan Terperinci\n\n`
         parsed.findings.forEach((finding: any, idx: number) => {
-          report += `**${idx + 1}. ${finding.category || finding.title || 'Finding'}**\n\n`
-          report += `- ${finding.finding || finding.description || 'N/A'}\n`
+          report += `### ${idx + 1}. ${finding.category || finding.title || 'Penemuan'}\n\n`
+          report += `**Penemuan:** ${finding.finding || finding.description || 'N/A'}\n\n`
           if (finding.severity) {
-            report += `- **Severity:** ${finding.severity}\n`
+            report += `**Tahap Keseriusan:** ${finding.severity}\n\n`
           }
-          report += `\n`
         })
       }
       
