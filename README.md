@@ -11,6 +11,9 @@
 ## SLIDES LINK
 https://www.canva.com/design/DAG5KB75PwE/pYzvfDQ8524BDjRDIAS-8A/edit?utm_content=DAG5KB75PwE&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
 
+## DEMO VIDEO
+https://drive.google.com/drive/folders/1hUwKkKSlQoQfq2QeR_T6VXTn4P4KaC7P?usp=sharing
+
 ## 🎯 The Challenge
 
 Malaysian SMEs face **three critical barriers** when pursuing JAKIM Halal Certification:
