@@ -167,13 +167,13 @@ export default function PreAudit() {
     { type: 'photos' as DocumentType, label: text.photos, icon: ImageIcon, isSpecial: true }
   ]
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     
     const files = Array.from(e.dataTransfer.files)
     files.forEach(file => handleFileUpload(file))
-  }
+  }, [])
 
   const handleFileUpload = (file: File, specificType?: DocumentType) => {
     if (file.size > 10 * 1024 * 1024) {

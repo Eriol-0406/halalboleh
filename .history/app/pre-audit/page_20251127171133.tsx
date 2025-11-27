@@ -158,22 +158,22 @@ export default function PreAudit() {
   const text = t[language]
 
   const REQUIRED_DOCS = [
-    { type: 'menu_list' as DocumentType, label: text.menuList, icon: FileText, isSpecial: true },
-    { type: 'ingredient_list' as DocumentType, label: text.ingredientList, icon: FileText, isSpecial: true },
-    { type: 'flow_chart' as DocumentType, label: text.flowChart, icon: TrendingUp, isSpecial: false },
-    { type: 'training_cert' as DocumentType, label: text.trainingCert, icon: FileText, isSpecial: false },
-    { type: 'halal_policy' as DocumentType, label: text.halalPolicy, icon: FileText, isSpecial: false },
-    { type: 'pest_control' as DocumentType, label: text.pestControl, icon: FileText, isSpecial: false },
-    { type: 'photos' as DocumentType, label: text.photos, icon: ImageIcon, isSpecial: true }
+    { type: 'flow_chart' as DocumentType, label: text.flowChart, icon: TrendingUp },
+    { type: 'training_cert' as DocumentType, label: text.trainingCert, icon: FileText },
+    { type: 'menu_list' as DocumentType, label: text.menuList, icon: FileText },
+    { type: 'ingredient_list' as DocumentType, label: text.ingredientList, icon: FileText },
+    { type: 'halal_policy' as DocumentType, label: text.halalPolicy, icon: FileText },
+    { type: 'pest_control' as DocumentType, label: text.pestControl, icon: FileText },
+    { type: 'photos' as DocumentType, label: text.photos, icon: ImageIcon }
   ]
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     
     const files = Array.from(e.dataTransfer.files)
     files.forEach(file => handleFileUpload(file))
-  }
+  }, [])
 
   const handleFileUpload = (file: File, specificType?: DocumentType) => {
     if (file.size > 10 * 1024 * 1024) {
@@ -235,37 +235,8 @@ export default function PreAudit() {
     setUploadedFiles(prev => prev.filter(f => f.id !== id))
   }
 
-  const removeSpecificFile = (type: DocumentType) => {
-    if (type === 'menu_list') {
-      setMenuFile(null)
-    } else if (type === 'ingredient_list') {
-      setIngredientFile(null)
-    } else if (type === 'photos') {
-      setKitchenPhotos([])
-    } else {
-      setUploadedFiles(prev => prev.filter(f => f.type !== type))
-    }
-  }
-
   const getUploadedDocTypes = () => {
     return new Set(uploadedFiles.map(f => f.type))
-  }
-
-  const getFileForType = (type: DocumentType): UploadedFile | UploadedFile[] | null => {
-    if (type === 'menu_list') return menuFile
-    if (type === 'ingredient_list') return ingredientFile
-    if (type === 'photos') return kitchenPhotos
-    const file = uploadedFiles.find(f => f.type === type)
-    return file || null
-  }
-
-  const getTotalUploaded = () => {
-    let count = 0
-    if (menuFile) count++
-    if (ingredientFile) count++
-    if (kitchenPhotos.length > 0) count++
-    count += getUploadedDocTypes().size
-    return count
   }
 
   const startAudit = async () => {
@@ -450,216 +421,289 @@ export default function PreAudit() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-5 gap-6">
-          {/* Left Column (40%) - Smart Upload List */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm sticky top-24">
-              <h2 className="text-lg font-bold text-[#2D4A3E] mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#C5E86C]" />
-                {text.requiredDocs}
-              </h2>
-              
-              {/* Company Info */}
-              <div className="space-y-3 mb-6">
-                <input
-                  type="text"
-                  placeholder={language === 'bm' ? 'Nama Syarikat' : 'Company Name'}
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#C5E86C] focus:outline-none text-[#2D4A3E] text-sm"
-                />
-                <input
-                  type="text"
-                  placeholder={language === 'bm' ? 'Jenis Perniagaan' : 'Business Type'}
-                  value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#C5E86C] focus:outline-none text-[#2D4A3E] text-sm"
-                />
-              </div>
-
-              {/* Smart Upload List */}
-              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                {REQUIRED_DOCS.map((doc) => {
-                  const file = getFileForType(doc.type)
-                  const hasFile = doc.type === 'photos' 
-                    ? (file as UploadedFile[])?.length > 0 
-                    : file !== null
-                  const Icon = doc.icon
-
-                  return (
-                    <div key={doc.type}>
-                      <label className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer group ${
-                        hasFile 
-                          ? 'bg-[#C5E86C]/20 border-[#C5E86C]' 
-                          : 'bg-gray-50 border-gray-200 hover:border-[#C5E86C] hover:bg-gray-100'
-                      }`}>
-                        <div className="flex-shrink-0">
-                          {hasFile ? (
-                            <CheckCircle className="w-5 h-5 text-[#2D4A3E]" />
-                          ) : (
-                            <Upload className="w-5 h-5 text-gray-400 group-hover:text-[#556B56]" />
-                          )}
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-semibold ${hasFile ? 'text-[#2D4A3E]' : 'text-gray-700'}`}>
-                            {doc.label}
-                          </div>
-                          {hasFile && (
-                            <div className="text-xs text-gray-600 truncate mt-1">
-                              {doc.type === 'photos' 
-                                ? `${(file as UploadedFile[]).length} ${language === 'bm' ? 'gambar' : 'photos'}`
-                                : (file as UploadedFile).name
-                              }
-                            </div>
-                          )}
-                        </div>
-
-                        {hasFile && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              removeSpecificFile(doc.type)
-                            }}
-                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-
-                        <input
-                          type="file"
-                          multiple={doc.type === 'photos'}
-                          accept={doc.type === 'photos' ? 'image/*' : '.pdf,.jpg,.jpeg,.png,.docx,.xlsx'}
-                          onChange={(e) => {
-                            const files = Array.from(e.target.files || [])
-                            files.forEach(file => {
-                              if (doc.type === 'menu_list') {
-                                handleMenuFileUpload(file)
-                              } else if (doc.type === 'ingredient_list') {
-                                handleIngredientFileUpload(file)
-                              } else if (doc.type === 'photos') {
-                                handleKitchenPhotoUpload(file)
-                              } else {
-                                handleFileUpload(file, doc.type)
-                              }
-                            })
-                            e.target.value = ''
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Progress */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-[#2D4A3E]">Progress</span>
-                  <span className="text-sm font-bold text-[#2D4A3E]">
-                    {getTotalUploaded()}/{REQUIRED_DOCS.length}
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] transition-all duration-500"
-                    style={{ width: `${(getTotalUploaded() / REQUIRED_DOCS.length) * 100}%` }}
+        {!auditResult ? (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Left Column - Required Documents Checklist */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm sticky top-24">
+                <h2 className="text-lg font-bold text-[#2D4A3E] mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-[#C5E86C]" />
+                  {text.requiredDocs}
+                </h2>
+                {/* Company Info */}
+                <div className="space-y-3 mb-6">
+                  <input
+                    type="text"
+                    placeholder={language === 'bm' ? 'Nama Syarikat' : 'Company Name'}
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#C5E86C] focus:outline-none text-[#2D4A3E]"
                   />
+                  <input
+                    type="text"
+                    placeholder={language === 'bm' ? 'Jenis Perniagaan' : 'Business Type'}
+                    value={businessType}
+                    onChange={(e) => setBusinessType(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[#C5E86C] focus:outline-none text-[#2D4A3E]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  {/* Menu File - Clickable Upload */}
+                  <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                    menuFile 
+                      ? 'bg-[#C5E86C]/20 border-[#C5E86C]' 
+                      : 'bg-gray-50 border-gray-200 hover:border-[#C5E86C]'
+                  }`}>
+                    {menuFile ? (
+                      <CheckCircle className="w-5 h-5 text-[#2D4A3E] flex-shrink-0" />
+                    ) : (
+                      <Upload className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    )}
+                    <span className={`text-sm font-medium flex-1 ${menuFile ? 'text-[#2D4A3E]' : 'text-gray-600'}`}>
+                      {text.menuList} {menuFile && `✓ ${menuFile.name}`}
+                    </span>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleMenuFileUpload(file)
+                        e.target.value = ''
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* Ingredient File - Clickable Upload */}
+                  <label className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                    ingredientFile 
+                      ? 'bg-[#C5E86C]/20 border-[#C5E86C]' 
+                      : 'bg-gray-50 border-gray-200 hover:border-[#C5E86C]'
+                  }`}>
+                    {ingredientFile ? (
+                      <CheckCircle className="w-5 h-5 text-[#2D4A3E] flex-shrink-0" />
+                    ) : (
+                      <Upload className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    )}
+                    <span className={`text-sm font-medium flex-1 ${ingredientFile ? 'text-[#2D4A3E]' : 'text-gray-600'}`}>
+                      {text.ingredientList} {ingredientFile && `✓ ${ingredientFile.name}`}
+                    </span>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleIngredientFileUpload(file)
+                        e.target.value = ''
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {/* Other Required Documents */}
+                  {REQUIRED_DOCS.filter(doc => doc.type !== 'menu_list' && doc.type !== 'ingredient_list' && doc.type !== 'photos').map((doc) => {
+                    const uploaded = getUploadedDocTypes().has(doc.type)
+                    return (
+                      <div 
+                        key={doc.type}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                          uploaded 
+                            ? 'bg-[#C5E86C]/20 border-[#C5E86C]' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        {uploaded ? (
+                          <CheckCircle className="w-5 h-5 text-[#2D4A3E] flex-shrink-0" />
+                        ) : (
+                          <div className="w-5 h-5 rounded border-2 border-gray-300 flex-shrink-0" />
+                        )}
+                        <span className={`text-sm font-medium ${uploaded ? 'text-[#2D4A3E]' : 'text-gray-600'}`}>
+                          {doc.label}
+                        </span>
+                      </div>
+                    )
+                  })}
+
+                  {/* Kitchen Photos Status */}
+                  <div className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                    kitchenPhotos.length > 0 
+                      ? 'bg-[#C5E86C]/20 border-[#C5E86C]' 
+                      : 'bg-gray-50 border-gray-200'
+                  }`}>
+                    {kitchenPhotos.length > 0 ? (
+                      <CheckCircle className="w-5 h-5 text-[#2D4A3E] flex-shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 rounded border-2 border-gray-300 flex-shrink-0" />
+                    )}
+                    <span className={`text-sm font-medium ${kitchenPhotos.length > 0 ? 'text-[#2D4A3E]' : 'text-gray-600'}`}>
+                      {text.photos} {kitchenPhotos.length > 0 && `(${kitchenPhotos.length})`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-[#2D4A3E]">Progress</span>
+                    <span className="text-sm font-bold text-[#2D4A3E]">
+                      {(() => {
+                        const total = REQUIRED_DOCS.length
+                        const uploaded = getUploadedDocTypes().size + 
+                          (menuFile ? 1 : 0) + 
+                          (ingredientFile ? 1 : 0) + 
+                          (kitchenPhotos.length > 0 ? 1 : 0)
+                        return `${uploaded}/${total}`
+                      })()}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#2D4A3E] to-[#C5E86C] transition-all duration-500"
+                      style={{ width: `${(() => {
+                        const total = REQUIRED_DOCS.length
+                        const uploaded = getUploadedDocTypes().size + 
+                          (menuFile ? 1 : 0) + 
+                          (ingredientFile ? 1 : 0) + 
+                          (kitchenPhotos.length > 0 ? 1 : 0)
+                        return (uploaded / total) * 100
+                      })()}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Right Column (60%) - Results Area */}
-          <div className="lg:col-span-3">
-            {!auditResult ? (
-              /* Initial State - Ready to Inspect */
-              <div className="bg-white rounded-2xl p-12 border border-gray-200 shadow-sm min-h-[600px] flex flex-col items-center justify-center">
-                {isAuditing ? (
-                  /* Loading State */
-                  <div className="text-center">
-                    <div className="relative w-32 h-32 mx-auto mb-6">
-                      <RefreshCw className="w-32 h-32 text-[#C5E86C] animate-spin" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-[#2D4A3E] mb-2">
-                      {text.analyzing}
-                    </h3>
-                    <p className="text-gray-600">
-                      {language === 'bm' 
-                        ? 'Menganalisis dokumen anda...' 
-                        : 'Analyzing your documents...'}
-                    </p>
+            {/* Right Column - Upload Area */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Upload Zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={`bg-white rounded-2xl p-12 border-2 border-dashed transition-all ${
+                  isDragging 
+                    ? 'border-[#C5E86C] bg-[#C5E86C]/10' 
+                    : 'border-gray-300 hover:border-[#C5E86C] hover:bg-[#C5E86C]/5'
+                }`}
+              >
+                <label className="block cursor-pointer text-center">
+                  <div className="w-20 h-20 rounded-2xl bg-[#F5F1E8] flex items-center justify-center mx-auto mb-4">
+                    <Upload className="w-10 h-10 text-[#2D4A3E]" />
                   </div>
-                ) : (
-                  /* Ready State */
-                  <div className="text-center max-w-md">
-                    <div className="relative w-48 h-48 mx-auto mb-8">
-                      <svg className="w-full h-full transform -rotate-90">
-                        <circle
-                          cx="96"
-                          cy="96"
-                          r="80"
-                          stroke="#E5E7EB"
-                          strokeWidth="16"
-                          fill="none"
-                        />
-                        <circle
-                          cx="96"
-                          cy="96"
-                          r="80"
-                          stroke="#C5E86C"
-                          strokeWidth="16"
-                          fill="none"
-                          strokeDasharray={2 * Math.PI * 80}
-                          strokeDashoffset={2 * Math.PI * 80 * (1 - getTotalUploaded() / REQUIRED_DOCS.length)}
-                          strokeLinecap="round"
-                          className="transition-all duration-500"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="text-5xl font-bold text-[#2D4A3E]">
-                          {getTotalUploaded()}
-                        </div>
-                        <div className="text-xl text-gray-500 font-semibold">
-                          / {REQUIRED_DOCS.length}
-                        </div>
-                      </div>
-                    </div>
-
-                    <h3 className="text-2xl font-bold text-[#2D4A3E] mb-3">
-                      {language === 'bm' ? 'Sedia untuk Diperiksa' : 'Ready to Inspect'}
-                    </h3>
-                    <p className="text-gray-600 mb-8">
-                      {language === 'bm' 
-                        ? 'Muat naik dokumen di sebelah kiri dan klik butang di bawah untuk memulakan pemeriksaan.'
-                        : 'Upload documents on the left and click the button below to start inspection.'}
-                    </p>
-
-                    <button
-                      onClick={startAudit}
-                      disabled={getTotalUploaded() < 3}
-                      className="px-10 py-4 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center gap-3 mx-auto"
-                    >
-                      <Sparkles className="w-6 h-6 text-[#C5E86C]" />
-                      {text.startAudit}
-                    </button>
-                    
-                    {getTotalUploaded() < 3 && (
-                      <p className="text-sm text-gray-500 mt-4">
-                        {language === 'bm' 
-                          ? `Muat naik sekurang-kurangnya 3 dokumen`
-                          : 'Upload at least 3 documents'}
-                      </p>
-                    )}
-                  </div>
-                )}
+                  <p className="text-lg font-semibold text-[#2D4A3E] mb-2">
+                    {text.dragDrop}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-6">
+                    {text.supports}
+                  </p>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.docx"
+                    onChange={(e) => {
+                      Array.from(e.target.files || []).forEach(file => handleFileUpload(file))
+                      e.target.value = ''
+                    }}
+                    className="hidden"
+                  />
+                  <button className="px-8 py-3 bg-[#C5E86C] text-[#2D4A3E] rounded-xl font-bold hover:bg-[#B5D85C] hover:scale-105 transition-all">
+                    {text.chooseFiles}
+                  </button>
+                </label>
               </div>
-            ) : (
-              /* Result State - Audit Results */
-              <div className="space-y-6">
+
+              {/* Uploaded Files */}
+              {uploadedFiles.length > 0 && (
+                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                  <h3 className="text-lg font-bold text-[#2D4A3E] mb-4">
+                    {text.uploadedFiles} ({uploadedFiles.length})
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {uploadedFiles.map((file) => (
+                      <div 
+                        key={file.id}
+                        className="flex items-center gap-3 p-3 bg-[#F5F1E8] rounded-xl border border-gray-200"
+                      >
+                        {file.name.match(/\.(jpg|jpeg|png)$/) ? (
+                          <img src={file.url} alt={file.name} className="w-12 h-12 object-cover rounded-lg" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-[#2D4A3E] flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-[#C5E86C]" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-[#2D4A3E] truncate">{file.name}</div>
+                          <div className="text-xs text-gray-500">
+                            {(file.size / 1024).toFixed(1)} KB
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeFile(file.id)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Camera Upload for Photos */}
+              <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <h3 className="text-lg font-bold text-[#2D4A3E] mb-3 flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-[#C5E86C]" />
+                  {text.kitchenPhotos}
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {text.photosDesc}
+                </p>
+                <label className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-xl font-semibold hover:scale-105 transition-all cursor-pointer">
+                  <Camera className="w-4 h-4 text-[#C5E86C]" />
+                  {text.takePhoto}
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => {
+                      Array.from(e.target.files || []).forEach(file => handleKitchenPhotoUpload(file))
+                      e.target.value = ''
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Start Audit Button */}
+              <button
+                onClick={startAudit}
+                disabled={uploadedFiles.length < 4 || isAuditing}
+                className="w-full py-5 bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] text-white rounded-2xl font-bold text-xl hover:scale-[1.02] hover:shadow-xl transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-lg"
+              >
+                {isAuditing ? (
+                  <span className="flex items-center justify-center gap-3">
+                    <RefreshCw className="w-6 h-6 animate-spin" />
+                    {text.analyzing}
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-3">
+                    <Sparkles className="w-6 h-6 text-[#C5E86C]" />
+                    {text.startAudit}
+                    {uploadedFiles.length < 4 && (
+                      <span className="text-sm font-normal opacity-80">
+                        ({text.uploadMin})
+                      </span>
+                    )}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Audit Results
+          <div className="space-y-6">
             {/* Score Circle */}
             <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
               <div className="flex flex-col items-center">
@@ -761,101 +805,99 @@ export default function PreAudit() {
                 </button>
               )}
             </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Results Modal */}
-        {showReportModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-              {/* Modal Header */}
-              <div className="bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] px-6 py-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <FileText className="w-6 h-6 text-[#C5E86C]" />
-                  {language === 'bm' ? 'Laporan Audit Lengkap' : 'Complete Audit Report'}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={downloadPDF}
-                    className="px-4 py-2 bg-[#C5E86C] text-[#2D4A3E] rounded-lg font-semibold hover:bg-[#B5D85C] transition-all flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    {language === 'bm' ? 'Muat Turun PDF' : 'Download PDF'}
-                  </button>
-                  <button
-                    onClick={() => setShowReportModal(false)}
-                    className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Body */}
-              <div className="p-8 overflow-y-auto max-h-[calc(90vh-80px)] bg-[#F9F7F2]">
-                <div id="markdown-report" className="prose prose-sm max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      // Style PASS/FAIL keywords
-                      p: ({ children }) => {
-                        const text = String(children)
-                        if (text.includes('PASS') || text.includes('LULUS')) {
-                          return <p className="text-[#4A7A57] font-bold">{children}</p>
-                        }
-                        if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
-                          return <p className="text-[#D32F2F] font-bold">{children}</p>
-                        }
-                        return <p className="text-[#2D4A3E]">{children}</p>
-                      },
-                      h1: ({ children }) => (
-                        <h1 className="text-3xl font-bold text-[#2D4A3E] mb-4">{children}</h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="text-2xl font-bold text-[#2D4A3E] mt-6 mb-3">{children}</h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="text-xl font-semibold text-[#556B56] mt-4 mb-2">{children}</h3>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="list-disc list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="list-decimal list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ol>
-                      ),
-                      strong: ({ children }) => {
-                        const text = String(children)
-                        if (text.includes('PASS') || text.includes('LULUS')) {
-                          return <strong className="text-[#4A7A57]">{children}</strong>
-                        }
-                        if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
-                          return <strong className="text-[#D32F2F]">{children}</strong>
-                        }
-                        return <strong className="text-[#2D4A3E]">{children}</strong>
-                      },
-                      table: ({ children }) => (
-                        <div className="overflow-x-auto my-4">
-                          <table className="min-w-full border-collapse border border-gray-300">{children}</table>
-                        </div>
-                      ),
-                      th: ({ children }) => (
-                        <th className="border border-gray-300 bg-[#2D4A3E] text-white px-4 py-2 text-left">{children}</th>
-                      ),
-                      td: ({ children }) => (
-                        <td className="border border-gray-300 px-4 py-2 text-[#2D4A3E]">{children}</td>
-                      ),
-                    }}
-                  >
-                    {fullReport}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
+
+      {/* Results Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <FileText className="w-6 h-6 text-[#C5E86C]" />
+                {language === 'bm' ? 'Laporan Audit Lengkap' : 'Complete Audit Report'}
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={downloadPDF}
+                  className="px-4 py-2 bg-[#C5E86C] text-[#2D4A3E] rounded-lg font-semibold hover:bg-[#B5D85C] transition-all flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  {language === 'bm' ? 'Muat Turun PDF' : 'Download PDF'}
+                </button>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 overflow-y-auto max-h-[calc(90vh-80px)] bg-[#F9F7F2]">
+              <div id="markdown-report" className="prose prose-sm max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    // Style PASS/FAIL keywords
+                    p: ({ children }) => {
+                      const text = String(children)
+                      if (text.includes('PASS') || text.includes('LULUS')) {
+                        return <p className="text-[#4A7A57] font-bold">{children}</p>
+                      }
+                      if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
+                        return <p className="text-[#D32F2F] font-bold">{children}</p>
+                      }
+                      return <p className="text-[#2D4A3E]">{children}</p>
+                    },
+                    h1: ({ children }) => (
+                      <h1 className="text-3xl font-bold text-[#2D4A3E] mb-4">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-2xl font-bold text-[#2D4A3E] mt-6 mb-3">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-xl font-semibold text-[#556B56] mt-4 mb-2">{children}</h3>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="list-disc list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ol>
+                    ),
+                    strong: ({ children }) => {
+                      const text = String(children)
+                      if (text.includes('PASS') || text.includes('LULUS')) {
+                        return <strong className="text-[#4A7A57]">{children}</strong>
+                      }
+                      if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
+                        return <strong className="text-[#D32F2F]">{children}</strong>
+                      }
+                      return <strong className="text-[#2D4A3E]">{children}</strong>
+                    },
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-4">
+                        <table className="min-w-full border-collapse border border-gray-300">{children}</table>
+                      </div>
+                    ),
+                    th: ({ children }) => (
+                      <th className="border border-gray-300 bg-[#2D4A3E] text-white px-4 py-2 text-left">{children}</th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="border border-gray-300 px-4 py-2 text-[#2D4A3E]">{children}</td>
+                    ),
+                  }}
+                >
+                  {fullReport}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

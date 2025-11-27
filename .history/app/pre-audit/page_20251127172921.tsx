@@ -167,13 +167,13 @@ export default function PreAudit() {
     { type: 'photos' as DocumentType, label: text.photos, icon: ImageIcon, isSpecial: true }
   ]
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     
     const files = Array.from(e.dataTransfer.files)
     files.forEach(file => handleFileUpload(file))
-  }
+  }, [])
 
   const handleFileUpload = (file: File, specificType?: DocumentType) => {
     if (file.size > 10 * 1024 * 1024) {
@@ -761,101 +761,99 @@ export default function PreAudit() {
                 </button>
               )}
             </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Results Modal */}
-        {showReportModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-              {/* Modal Header */}
-              <div className="bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] px-6 py-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <FileText className="w-6 h-6 text-[#C5E86C]" />
-                  {language === 'bm' ? 'Laporan Audit Lengkap' : 'Complete Audit Report'}
-                </h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={downloadPDF}
-                    className="px-4 py-2 bg-[#C5E86C] text-[#2D4A3E] rounded-lg font-semibold hover:bg-[#B5D85C] transition-all flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    {language === 'bm' ? 'Muat Turun PDF' : 'Download PDF'}
-                  </button>
-                  <button
-                    onClick={() => setShowReportModal(false)}
-                    className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Body */}
-              <div className="p-8 overflow-y-auto max-h-[calc(90vh-80px)] bg-[#F9F7F2]">
-                <div id="markdown-report" className="prose prose-sm max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      // Style PASS/FAIL keywords
-                      p: ({ children }) => {
-                        const text = String(children)
-                        if (text.includes('PASS') || text.includes('LULUS')) {
-                          return <p className="text-[#4A7A57] font-bold">{children}</p>
-                        }
-                        if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
-                          return <p className="text-[#D32F2F] font-bold">{children}</p>
-                        }
-                        return <p className="text-[#2D4A3E]">{children}</p>
-                      },
-                      h1: ({ children }) => (
-                        <h1 className="text-3xl font-bold text-[#2D4A3E] mb-4">{children}</h1>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="text-2xl font-bold text-[#2D4A3E] mt-6 mb-3">{children}</h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="text-xl font-semibold text-[#556B56] mt-4 mb-2">{children}</h3>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="list-disc list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="list-decimal list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ol>
-                      ),
-                      strong: ({ children }) => {
-                        const text = String(children)
-                        if (text.includes('PASS') || text.includes('LULUS')) {
-                          return <strong className="text-[#4A7A57]">{children}</strong>
-                        }
-                        if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
-                          return <strong className="text-[#D32F2F]">{children}</strong>
-                        }
-                        return <strong className="text-[#2D4A3E]">{children}</strong>
-                      },
-                      table: ({ children }) => (
-                        <div className="overflow-x-auto my-4">
-                          <table className="min-w-full border-collapse border border-gray-300">{children}</table>
-                        </div>
-                      ),
-                      th: ({ children }) => (
-                        <th className="border border-gray-300 bg-[#2D4A3E] text-white px-4 py-2 text-left">{children}</th>
-                      ),
-                      td: ({ children }) => (
-                        <td className="border border-gray-300 px-4 py-2 text-[#2D4A3E]">{children}</td>
-                      ),
-                    }}
-                  >
-                    {fullReport}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
+
+      {/* Results Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-[#2D4A3E] to-[#3D5A4E] px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <FileText className="w-6 h-6 text-[#C5E86C]" />
+                {language === 'bm' ? 'Laporan Audit Lengkap' : 'Complete Audit Report'}
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={downloadPDF}
+                  className="px-4 py-2 bg-[#C5E86C] text-[#2D4A3E] rounded-lg font-semibold hover:bg-[#B5D85C] transition-all flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  {language === 'bm' ? 'Muat Turun PDF' : 'Download PDF'}
+                </button>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 overflow-y-auto max-h-[calc(90vh-80px)] bg-[#F9F7F2]">
+              <div id="markdown-report" className="prose prose-sm max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    // Style PASS/FAIL keywords
+                    p: ({ children }) => {
+                      const text = String(children)
+                      if (text.includes('PASS') || text.includes('LULUS')) {
+                        return <p className="text-[#4A7A57] font-bold">{children}</p>
+                      }
+                      if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
+                        return <p className="text-[#D32F2F] font-bold">{children}</p>
+                      }
+                      return <p className="text-[#2D4A3E]">{children}</p>
+                    },
+                    h1: ({ children }) => (
+                      <h1 className="text-3xl font-bold text-[#2D4A3E] mb-4">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-2xl font-bold text-[#2D4A3E] mt-6 mb-3">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-xl font-semibold text-[#556B56] mt-4 mb-2">{children}</h3>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="list-disc list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="list-decimal list-inside text-[#2D4A3E] space-y-2 my-4">{children}</ol>
+                    ),
+                    strong: ({ children }) => {
+                      const text = String(children)
+                      if (text.includes('PASS') || text.includes('LULUS')) {
+                        return <strong className="text-[#4A7A57]">{children}</strong>
+                      }
+                      if (text.includes('FAIL') || text.includes('GAGAL') || text.includes('CRITICAL') || text.includes('KRITIKAL')) {
+                        return <strong className="text-[#D32F2F]">{children}</strong>
+                      }
+                      return <strong className="text-[#2D4A3E]">{children}</strong>
+                    },
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-4">
+                        <table className="min-w-full border-collapse border border-gray-300">{children}</table>
+                      </div>
+                    ),
+                    th: ({ children }) => (
+                      <th className="border border-gray-300 bg-[#2D4A3E] text-white px-4 py-2 text-left">{children}</th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="border border-gray-300 px-4 py-2 text-[#2D4A3E]">{children}</td>
+                    ),
+                  }}
+                >
+                  {fullReport}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
