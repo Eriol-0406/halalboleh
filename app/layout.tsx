@@ -6,13 +6,13 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' })
 
 export const metadata: Metadata = {
-  title: 'AMANA - AI-Powered JAKIM Certification Assistant',
+  title: 'HalalBoleh - AI-Powered JAKIM Certification Assistant',
   description: 'Replace RM3,500/month Halal Executive with RM50/month AI Assistant. Powered by EmbeddedLLM JamAI Base.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'AMANA',
+    title: 'HalalBoleh',
   },
 }
 

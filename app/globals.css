@@ -171,3 +171,56 @@
     @apply bg-white text-gray-900 shadow-lg border border-gray-100 rounded-2xl p-8;
   }
 }
+/* ============================================
+   AMANA v2 DESIGN SYSTEM (journey UI)
+   ============================================ */
+
+@layer components {
+  .v2-card {
+    @apply bg-white rounded-2xl border border-[#2D4A3E]/10 shadow-[0_1px_3px_rgba(45,74,62,0.06)];
+  }
+
+  .v2-card-hover {
+    @apply transition-all duration-200 hover:border-[#C5E86C] hover:shadow-[0_6px_20px_rgba(45,74,62,0.10)] hover:-translate-y-0.5;
+  }
+
+  .v2-btn {
+    @apply inline-flex items-center justify-center gap-2 text-sm font-semibold rounded-full px-4 py-2 transition-all duration-150 disabled:opacity-40 disabled:pointer-events-none;
+  }
+
+  .v2-btn-primary {
+    @apply v2-btn bg-[#2D4A3E] text-white hover:bg-[#3a5d4f] active:scale-[0.98] shadow-sm;
+  }
+
+  .v2-btn-accent {
+    @apply v2-btn bg-[#C5E86C] text-[#2D4A3E] hover:bg-[#d3f080] active:scale-[0.98] shadow-sm;
+  }
+
+  .v2-btn-ghost {
+    @apply v2-btn border border-[#2D4A3E]/15 text-[#2D4A3E]/70 hover:border-[#C5E86C] hover:text-[#2D4A3E] bg-white;
+  }
+
+  .v2-chip {
+    @apply inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border;
+  }
+
+  .v2-title {
+    font-family: var(--font-playfair), Georgia, serif;
+    @apply text-[#2D4A3E] font-bold tracking-tight;
+  }
+
+  .v2-input {
+    @apply bg-[#F5F1E8] rounded-full px-4 py-2 text-sm text-[#2D4A3E] outline-none focus:ring-2 focus:ring-[#C5E86C] placeholder:text-[#2D4A3E]/40;
+  }
+}
+
+@keyframes v2-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.v2-skeleton {
+  background: linear-gradient(90deg, #eee9dd 25%, #f7f3ea 50%, #eee9dd 75%);
+  background-size: 800px 100%;
+  animation: v2-shimmer 1.4s infinite linear;
+}

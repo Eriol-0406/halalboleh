@@ -56,7 +56,7 @@ export default function Logo({
       }`}
       style={{ fontSize: `${textSize}px`, lineHeight: 1.2 }}
     >
-      AMANA
+      HalalBoleh
     </span>
   )
 

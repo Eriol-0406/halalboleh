@@ -3,7 +3,7 @@ export type Language = 'en' | 'bm'
 export const translations = {
   en: {
     // App
-    appName: 'AMANA',
+    appName: 'HalalBoleh',
     tagline: 'Your AI Halal Executive',
     
     // Navigation
@@ -23,8 +23,8 @@ export const translations = {
     
     // About Section
     aboutCategories: 'AI ASSISTANT | HALAL CERT | JAKIM READY',
-    aboutTitle: 'ABOUT AMANA',
-    aboutDesc1: 'AMANA was created with a vision that a more accessible approach to halal certification would result in better outcomes for SMEs—from application to approval.',
+    aboutTitle: 'ABOUT HalalBoleh',
+    aboutDesc1: 'HalalBoleh was created with a vision that a more accessible approach to halal certification would result in better outcomes for SMEs—from application to approval.',
     aboutDesc2: 'Combining AI technology with JAKIM compliance standards, we\'ve helped over 500 businesses in our first year. A positive and supportive experience makes halal certification less intimidating for first-timers.',
 
     // Philosophy Section
@@ -64,7 +64,7 @@ export const translations = {
 
     // Why Choose Section (NEW)
     whyChooseTitle: 'Why Choose',
-    whyChooseTitleHighlight: 'AMANA?',
+    whyChooseTitleHighlight: 'HalalBoleh?',
     whyChooseSubtitle: 'Benefits of using AI for certification',
     benefit1Title: 'AI-Powered',
     benefit1Desc: 'JamAI Base technology with Chain of Thought',
@@ -136,7 +136,7 @@ export const translations = {
   },
   bm: {
     // App
-    appName: 'AMANA',
+    appName: 'HalalBoleh',
     tagline: 'Pembantu Halal AI Anda',
     
     // Navigation
@@ -156,8 +156,8 @@ export const translations = {
     
     // About Section
     aboutCategories: 'PEMBANTU AI | SIJIL HALAL | BERSEDIA JAKIM',
-    aboutTitle: 'TENTANG AMANA',
-    aboutDesc1: 'AMANA dicipta dengan visi bahawa pendekatan pensijilan halal yang lebih mudah diakses akan menghasilkan hasil yang lebih baik untuk PKS—dari permohonan hingga kelulusan.',
+    aboutTitle: 'TENTANG HalalBoleh',
+    aboutDesc1: 'HalalBoleh dicipta dengan visi bahawa pendekatan pensijilan halal yang lebih mudah diakses akan menghasilkan hasil yang lebih baik untuk PKS—dari permohonan hingga kelulusan.',
     aboutDesc2: 'Menggabungkan teknologi AI dengan piawaian pematuhan JAKIM, kami telah membantu lebih 500 perniagaan dalam tahun pertama kami. Pengalaman yang positif dan menyokong menjadikan pensijilan halal kurang menakutkan untuk pemula.',
 
     // Philosophy Section
@@ -197,7 +197,7 @@ export const translations = {
 
     // Why Choose Section (NEW)
     whyChooseTitle: 'Mengapa Pilih',
-    whyChooseTitleHighlight: 'AMANA?',
+    whyChooseTitleHighlight: 'HalalBoleh?',
     whyChooseSubtitle: 'Kelebihan menggunakan AI untuk pensijilan',
     benefit1Title: 'Dikuasakan AI',
     benefit1Desc: 'Teknologi JamAI Base dengan Chain of Thought',
