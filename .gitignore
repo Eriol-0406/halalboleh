@@ -33,3 +33,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AMANA v2 evidence data (uploads + reports)
+/data/
+
+# Generated audit packs
+/public/generated/pack/
