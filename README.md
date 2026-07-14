@@ -1,4 +1,4 @@
-# 🌙 AMANA - AI-Powered Halal Certification Assistant
+# HalalBoleh - AI-Powered Halal Certification Assistant
 
 > **Empowering Malaysian SMEs with affordable, intelligent halal compliance technology**
 
